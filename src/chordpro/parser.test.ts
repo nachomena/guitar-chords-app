@@ -1,5 +1,6 @@
 import { parseChordProSongText } from './parser';
 import {
+  computeLineTimeWeights,
   convertStrumPatternToDisplay,
   countLinesForBpmTiming,
   groupParsedLinesForRendering,
@@ -261,6 +262,33 @@ describe('countLinesForBpmTiming', () => {
 
     // 2 group lines * repeatCount 2 = 4, plus the standalone "[A] [G]" tag line = 5
     expect(countLinesForBpmTiming(renderableLines)).toBe(5);
+  });
+});
+
+describe('computeLineTimeWeights', () => {
+  it('gives comment lines a smaller weight than real musical lines', () => {
+    const parsedSong = parseChordProSongText(
+      ['{comment: Verse 1}', '[C]Hello', '[D]there'].join('\n'),
+    );
+    const renderableLines = groupParsedLinesForRendering(parsedSong.lines);
+
+    const weights = computeLineTimeWeights(renderableLines);
+    expect(weights).toHaveLength(3);
+    expect(weights[0]).toBeLessThan(1); // the comment
+    expect(weights[1]).toBe(1);
+    expect(weights[2]).toBe(1);
+  });
+
+  it('weights everything else the same as countLinesForBpmTiming would', () => {
+    const parsedSong = parseChordProSongText(
+      ['{start_of_tab}', 'e|-0-|', 'B|-1-|', '{end_of_tab}', '([A] [Bm]) x2'].join('\n'),
+    );
+    const renderableLines = groupParsedLinesForRendering(parsedSong.lines);
+
+    const weights = computeLineTimeWeights(renderableLines);
+    // tabBlock (2 raw tab lines) + repeatedChordGroup (1 group line * x2)
+    expect(weights).toEqual([2, 2]);
+    expect(weights.reduce((sum, weight) => sum + weight, 0)).toBe(countLinesForBpmTiming(renderableLines));
   });
 });
 

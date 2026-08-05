@@ -5,7 +5,7 @@
 // Editor's live preview, so colors are passed in rather than read from the app theme
 // directly — the Performance view has its own independent light/dark toggle that can
 // differ from the Settings theme (§5.1/§5.6).
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 
 import type { RenderableChordSheetLine } from '../chordpro/rendering';
 import type { RenderableLyricToken } from '../chordpro/types';
@@ -149,6 +149,7 @@ export function ChordSheetView({
   colors,
   onChordPress,
   isChordSymbolRecognized,
+  onLineHeightMeasured,
 }: {
   renderableLines: RenderableChordSheetLine[];
   lyricFontSizePixels: number;
@@ -157,8 +158,16 @@ export function ChordSheetView({
   onChordPress: (chordSymbol: string) => void;
   /** When provided (the Editor's live preview — §5.1), unrecognized chord names get a dotted underline instead of the normal solid chord label. */
   isChordSymbolRecognized?: (chordSymbol: string) => boolean;
+  /** When provided (the Performance view), reports each rendered line's real height as it's measured — feeds the scroll engine's comment-lines-scroll-faster pacing. */
+  onLineHeightMeasured?: (lineIndex: number, height: number) => void;
 }) {
   const { fontFamily } = useAppTheme();
+
+  const makeOnLayoutHandler = (lineIndex: number) =>
+    onLineHeightMeasured
+      ? (layoutChangeEvent: LayoutChangeEvent) =>
+          onLineHeightMeasured(lineIndex, layoutChangeEvent.nativeEvent.layout.height)
+      : undefined;
 
   return (
     <View>
@@ -167,6 +176,7 @@ export function ChordSheetView({
           return (
             <Text
               key={lineIndex}
+              onLayout={makeOnLayoutHandler(lineIndex)}
               style={[
                 styles.sectionLabel,
                 {
@@ -185,6 +195,7 @@ export function ChordSheetView({
           return (
             <View
               key={lineIndex}
+              onLayout={makeOnLayoutHandler(lineIndex)}
               style={[
                 styles.tabBlock,
                 { backgroundColor: colors.surface, borderColor: colors.divider },
@@ -207,7 +218,11 @@ export function ChordSheetView({
 
         if (renderableLine.type === 'distributedChordLine') {
           return (
-            <View key={lineIndex} style={styles.distributedChordLineContainer}>
+            <View
+              key={lineIndex}
+              onLayout={makeOnLayoutHandler(lineIndex)}
+              style={styles.distributedChordLineContainer}
+            >
               <View style={styles.distributedChordRow}>
                 {renderableLine.chordTokens.map((chordToken, chordTokenIndex) => (
                   <DistributedChordChip
@@ -237,6 +252,7 @@ export function ChordSheetView({
           return (
             <View
               key={lineIndex}
+              onLayout={makeOnLayoutHandler(lineIndex)}
               style={[styles.repeatedGroupContainer, { borderColor: colors.divider }]}
             >
               {renderableLine.groupLines.map((groupLineTokens, groupLineIndex) => (
@@ -269,6 +285,7 @@ export function ChordSheetView({
           return (
             <View
               key={lineIndex}
+              onLayout={makeOnLayoutHandler(lineIndex)}
               style={[styles.strumPill, { backgroundColor: colors.surface }]}
             >
               <Text
@@ -286,7 +303,7 @@ export function ChordSheetView({
         }
 
         return (
-          <View key={lineIndex} style={styles.lyricLine}>
+          <View key={lineIndex} onLayout={makeOnLayoutHandler(lineIndex)} style={styles.lyricLine}>
             {renderableLine.tokens.map((token, tokenIndex) => (
               <LyricLineTokenView
                 key={tokenIndex}

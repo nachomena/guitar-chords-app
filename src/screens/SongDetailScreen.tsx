@@ -2,15 +2,18 @@
 // renders the chord sheet with tempo-driven auto-scroll (§5.2).
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated from 'react-native-reanimated';
 import Svg, { Circle, Path, Polyline } from 'react-native-svg';
 
 import { ChordPopover, useChordPopover } from '../components/ChordPopover';
 import { ChordSheetView } from '../components/ChordSheetView';
 import { TransportBar } from '../components/TransportBar';
-import { countLinesForBpmTiming, groupParsedLinesForRendering } from '../chordpro/rendering';
+import {
+  computeLineTimeWeights,
+  countLinesForBpmTiming,
+  groupParsedLinesForRendering,
+} from '../chordpro/rendering';
 import { parseChordProSongText } from '../chordpro/parser';
 import { useFollowMode } from '../audio/useFollowMode';
 import { selectScrollTimeSourceForSong } from '../scroll-engine/selectScrollTimeSource';
@@ -34,6 +37,15 @@ function BackChevronIcon({ color }: { color: string }) {
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round">
       <Polyline points="15 18 9 12 15 6" />
+    </Svg>
+  );
+}
+
+function EditPencilIcon({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+      <Path d="M15 5l4 4" />
     </Svg>
   );
 }
@@ -90,25 +102,28 @@ export function SongDetailScreen({
     [song, renderableLines],
   );
 
+  const lineTimeWeights = useMemo(() => computeLineTimeWeights(renderableLines), [renderableLines]);
+
   const scrollEngine = useScrollEngine({
     totalDurationMilliseconds: scrollTimeSourceSelection.isAvailable
       ? scrollTimeSourceSelection.totalDurationMilliseconds
       : null,
+    lineTimeWeights,
   });
 
-  // Elapsed time lives in a Reanimated shared value updated every frame on the UI
-  // thread (see useScrollEngine) — polling it into React state at a slow, fixed
-  // interval gives the transport bar a readable "elapsed / total" readout without
-  // re-rendering 60 times a second. This exists so playback progress is visible
-  // even when the scroll movement itself is too subtle to notice (a long duration
-  // spread over a short chart moves only a few pixels a second).
+  // Elapsed time lives in a plain ref updated by useScrollEngine's own tick
+  // interval — polling it into React state at a slower, fixed interval gives the
+  // transport bar a readable "elapsed / total" readout without re-rendering on
+  // every tick. This exists so playback progress is visible even when the scroll
+  // movement itself is too subtle to notice (a long duration spread over a short
+  // chart moves only a few pixels a second).
   const [elapsedSecondsForDisplay, setElapsedSecondsForDisplay] = useState(0);
   useEffect(() => {
     const pollIntervalId = setInterval(() => {
-      setElapsedSecondsForDisplay(scrollEngine.elapsedMillisecondsSharedValue.value / 1000);
+      setElapsedSecondsForDisplay(scrollEngine.elapsedMillisecondsRef.current / 1000);
     }, ELAPSED_TIME_DISPLAY_POLL_INTERVAL_MILLISECONDS);
     return () => clearInterval(pollIntervalId);
-  }, [scrollEngine.elapsedMillisecondsSharedValue]);
+  }, [scrollEngine.elapsedMillisecondsRef]);
 
   useEffect(() => {
     scrollEngine.resetPlaybackToStart();
@@ -179,6 +194,13 @@ export function SongDetailScreen({
         ) : null}
         <Pressable
           hitSlop={8}
+          onPress={() => navigation.navigate('SongEditor', { songId })}
+          style={styles.headerIconButton}
+        >
+          <EditPencilIcon color={performanceColors.accent} />
+        </Pressable>
+        <Pressable
+          hitSlop={8}
           onPress={() => setIsPerformanceDarkMode((isDark) => !isDark)}
           style={styles.headerIconButton}
         >
@@ -190,8 +212,8 @@ export function SongDetailScreen({
         </Pressable>
       </View>
 
-      <Animated.ScrollView
-        ref={scrollEngine.animatedScrollViewRef}
+      <ScrollView
+        ref={scrollEngine.scrollViewRef}
         onLayout={scrollEngine.handleScrollViewLayout}
         onContentSizeChange={scrollEngine.handleContentSizeChange}
         onScrollBeginDrag={scrollEngine.handleManualScrollBeginDrag}
@@ -212,9 +234,10 @@ export function SongDetailScreen({
             divider: performanceColors.divider,
           }}
           onChordPress={openChordPopover}
+          onLineHeightMeasured={scrollEngine.registerLineHeight}
         />
         <View style={{ height: 300 }} />
-      </Animated.ScrollView>
+      </ScrollView>
 
       <TransportBar
         isPlaying={scrollEngine.isPlaying}

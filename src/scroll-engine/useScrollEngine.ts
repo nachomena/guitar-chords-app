@@ -1,132 +1,193 @@
 // Drives the Performance view's auto-scroll (SPEC.md §5.2/§8.5). A virtual playhead
-// (elapsedMilliseconds) advances every frame while playing and maps to a target
-// scroll offset — implemented with react-native-reanimated's useFrameCallback +
-// scrollTo running entirely on the UI thread, so the scroll position updates
-// smoothly every frame rather than jumping line-to-line, and stays responsive even
-// if the JS thread is briefly busy.
+// (elapsedMilliseconds) advances on a plain JS-thread `setInterval` and maps to a
+// target scroll offset via the ScrollView's own imperative `scrollTo` method.
 //
-// Pausing simply stops the frame callback from advancing the virtual clock;
-// resuming restarts it from the stored elapsed time (not from zero). Manual
-// dragging (via the ScrollView's own onScrollBeginDrag/onScrollEndDrag/
-// onMomentumScrollEnd — see SPEC.md deviation notes) pauses auto-scroll and
-// re-anchors the virtual playhead to the new visual position, so a subsequent
-// play() continues sensibly from where the user scrolled to.
-import { useCallback, useEffect, useState } from 'react';
-import type {
-  LayoutChangeEvent,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
+// This is deliberately NOT built on react-native-reanimated's useFrameCallback
+// (an earlier version was). In testing, that callback's internal
+// requestAnimationFrame-based timing under-reported real elapsed wall-clock time by
+// a large, inconsistent factor (playback tracked roughly 3x slower than real time),
+// and switching only the clock read inside it (from its own `frameInfo.timestamp` to
+// `Date.now()`) did not resolve it — pointing at the callback's invocation
+// scheduling itself, not just which clock it reads. Rather than keep chasing
+// Reanimated/Worklets internals with no device to instrument directly, this uses a
+// plain `setInterval` timed with `Date.now()` on the JS thread: an unambiguous,
+// independently-verifiable wall clock with no dependency on any animation-frame
+// scheduling internals. The auto-scroll rates this app actually produces are slow
+// (often single-digit pixels per second — see the earlier duration-vs-content-height
+// analysis), so a ~20-updates/second interval is indistinguishable from 60fps here.
+//
+// Pausing simply stops the interval; resuming restarts it from the stored elapsed
+// time (not from zero).
+//
+// Manual dragging (via the ScrollView's own onScrollBeginDrag/onScrollEndDrag/
+// onMomentumScrollEnd) deliberately does NOT pause playback — this is a product
+// decision that overrides SPEC.md §5.1/§5.2's "dragging pauses auto-scroll"
+// wording. While actively playing, dragging the chart works as a live seek instead:
+// the tick loop keeps advancing the virtual playhead and keeps the "Play/Pause"
+// button showing Pause throughout, but suspends its own scrollTo calls for the
+// duration of the gesture (so it doesn't fight the user's finger), then re-anchors
+// the playhead to wherever the user let go and keeps playing from there. When
+// paused, dragging behaves the same as any plain ScrollView — free scrolling, with
+// the playhead re-anchored so a later play() resumes from that position.
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ScrollView,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
-import Animated, {
-  runOnJS,
-  scrollTo,
-  useAnimatedRef,
-  useFrameCallback,
-  useSharedValue,
-  type SharedValue,
-} from 'react-native-reanimated';
+
+import {
+  buildScrollPacingBreakpoints,
+  mapPixelFractionToTimeFraction,
+  mapTimeFractionToPixelFraction,
+} from './scrollPacing';
+
+const SCROLL_TICK_INTERVAL_MILLISECONDS = 50;
 
 export type UseScrollEngineParameters = {
   /** null when the song has neither a duration nor a bpm set (§5.2: auto-scroll unavailable). */
   totalDurationMilliseconds: number | null;
+  /**
+   * Relative time weight per renderable line (see
+   * chordpro/rendering.ts's computeLineTimeWeights) — paces the fixed total
+   * duration unevenly across the chart instead of one flat rate, so e.g. a
+   * `{comment: ...}` label's line scrolls past faster than a real musical line.
+   * Pass `[]` (or an all-equal-weight array) for the old flat-rate behavior.
+   */
+  lineTimeWeights: number[];
 };
 
 export type UseScrollEngineResult = {
   isAutoScrollAvailable: boolean;
   isPlaying: boolean;
-  animatedScrollViewRef: ReturnType<typeof useAnimatedRef<Animated.ScrollView>>;
+  scrollViewRef: React.RefObject<ScrollView | null>;
   play: () => void;
   pause: () => void;
   togglePlayPause: () => void;
   resetPlaybackToStart: () => void;
   handleScrollViewLayout: (layoutChangeEvent: LayoutChangeEvent) => void;
   handleContentSizeChange: (contentWidth: number, contentHeight: number) => void;
+  /** Wire to each rendered line's onLayout so the pacing math knows its real height. */
+  registerLineHeight: (lineIndex: number, height: number) => void;
   handleManualScrollBeginDrag: () => void;
   handleManualScrollPositionSettled: (
     scrollEvent: NativeSyntheticEvent<NativeScrollEvent>,
   ) => void;
-  /** Read `.value` from JS (e.g. on a polling interval) to show playback progress — safe and instant from either thread. */
-  elapsedMillisecondsSharedValue: SharedValue<number>;
+  /** Read `.current` (e.g. on a polling interval) to show playback progress. */
+  elapsedMillisecondsRef: React.RefObject<number>;
 };
 
 export function useScrollEngine({
   totalDurationMilliseconds,
+  lineTimeWeights,
 }: UseScrollEngineParameters): UseScrollEngineResult {
-  const animatedScrollViewRef = useAnimatedRef<Animated.ScrollView>();
-
-  const elapsedMillisecondsSharedValue = useSharedValue(0);
-  const isPlayingSharedValue = useSharedValue(false);
-  const lastFrameTimestampSharedValue = useSharedValue(0);
-  const scrollViewHeightSharedValue = useSharedValue(0);
-  const contentHeightSharedValue = useSharedValue(0);
-  const totalDurationMillisecondsSharedValue = useSharedValue(totalDurationMilliseconds ?? 0);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
+
+  const elapsedMillisecondsRef = useRef(0);
+  const lastTickTimestampRef = useRef<number | null>(null);
+  const tickIntervalIdRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scrollViewHeightRef = useRef(0);
+  const contentHeightRef = useRef(0);
+  const totalDurationMillisecondsRef = useRef(totalDurationMilliseconds ?? 0);
+  const lineTimeWeightsRef = useRef<number[]>(lineTimeWeights);
+  const lineHeightsPixelsRef = useRef<(number | undefined)[]>([]);
+  // True for the duration of a manual drag gesture — the tick loop keeps advancing
+  // the playhead underneath but skips its own scrollTo calls so it doesn't fight
+  // the user's finger.
+  const isManuallyDraggingRef = useRef(false);
 
   const isAutoScrollAvailable =
     totalDurationMilliseconds !== null && totalDurationMilliseconds > 0;
 
   useEffect(() => {
-    totalDurationMillisecondsSharedValue.value = totalDurationMilliseconds ?? 0;
-  }, [totalDurationMilliseconds, totalDurationMillisecondsSharedValue]);
+    totalDurationMillisecondsRef.current = totalDurationMilliseconds ?? 0;
+  }, [totalDurationMilliseconds]);
 
-  const handlePlaybackReachedEnd = useCallback(() => {
-    setIsPlaying(false);
+  useEffect(() => {
+    lineTimeWeightsRef.current = lineTimeWeights;
+    // A new set of lines (new song, or the same song re-parsed) invalidates any
+    // heights measured for the previous line list.
+    lineHeightsPixelsRef.current = [];
+  }, [lineTimeWeights]);
+
+  const registerLineHeight = useCallback((lineIndex: number, height: number) => {
+    lineHeightsPixelsRef.current[lineIndex] = height;
   }, []);
 
-  useFrameCallback(() => {
-    'worklet';
-    if (!isPlayingSharedValue.value) return;
-
-    // Deliberately Date.now() rather than the frameInfo.timestamp this callback
-    // receives: the latter comes from react-native-reanimated's own
-    // requestAnimationFrame scheduling, and in testing its deltas under-reported
-    // real elapsed wall-clock time by a large, consistent factor (playback tracked
-    // roughly 3x slower than real time) — a discrepancy specific to that internal
-    // clock, not to this app's math. Date.now() is unambiguous wall-clock time
-    // regardless of frame-scheduling internals, and worklets can call it directly.
-    const currentFrameTimestamp = Date.now();
-    if (lastFrameTimestampSharedValue.value === 0) {
-      // First frame after a play()/resume — establish a baseline without adding a
-      // delta, so a long pause never produces a large forward jump.
-      lastFrameTimestampSharedValue.value = currentFrameTimestamp;
-      return;
-    }
-
-    const deltaMilliseconds = currentFrameTimestamp - lastFrameTimestampSharedValue.value;
-    lastFrameTimestampSharedValue.value = currentFrameTimestamp;
-
-    const totalDuration = totalDurationMillisecondsSharedValue.value;
-    const nextElapsedMilliseconds = Math.min(
-      totalDuration,
-      elapsedMillisecondsSharedValue.value + deltaMilliseconds,
-    );
-    elapsedMillisecondsSharedValue.value = nextElapsedMilliseconds;
-
+  const applyScrollPositionForElapsed = useCallback((elapsedMilliseconds: number) => {
+    const totalDuration = totalDurationMillisecondsRef.current;
     const maximumScrollOffset = Math.max(
       0,
-      contentHeightSharedValue.value - scrollViewHeightSharedValue.value,
+      contentHeightRef.current - scrollViewHeightRef.current,
     );
-    const playbackFraction = totalDuration > 0 ? nextElapsedMilliseconds / totalDuration : 0;
-    scrollTo(animatedScrollViewRef, 0, playbackFraction * maximumScrollOffset, false);
+    const timeFraction = totalDuration > 0 ? elapsedMilliseconds / totalDuration : 0;
+    const breakpoints = buildScrollPacingBreakpoints(
+      lineTimeWeightsRef.current,
+      lineHeightsPixelsRef.current,
+    );
+    const pixelFraction = mapTimeFractionToPixelFraction(timeFraction, breakpoints);
+    scrollViewRef.current?.scrollTo({
+      x: 0,
+      y: pixelFraction * maximumScrollOffset,
+      animated: false,
+    });
+  }, []);
 
-    if (nextElapsedMilliseconds >= totalDuration) {
-      isPlayingSharedValue.value = false;
-      runOnJS(handlePlaybackReachedEnd)();
+  const stopTicking = useCallback(() => {
+    if (tickIntervalIdRef.current !== null) {
+      clearInterval(tickIntervalIdRef.current);
+      tickIntervalIdRef.current = null;
     }
-  }, true);
+  }, []);
+
+  const startTicking = useCallback(() => {
+    if (tickIntervalIdRef.current !== null) return;
+    lastTickTimestampRef.current = null;
+    tickIntervalIdRef.current = setInterval(() => {
+      const currentTickTimestamp = Date.now();
+      if (lastTickTimestampRef.current === null) {
+        // First tick after a play()/resume — establish a baseline without adding a
+        // delta, so a long pause never produces a large forward jump.
+        lastTickTimestampRef.current = currentTickTimestamp;
+        return;
+      }
+
+      const deltaMilliseconds = currentTickTimestamp - lastTickTimestampRef.current;
+      lastTickTimestampRef.current = currentTickTimestamp;
+
+      const totalDuration = totalDurationMillisecondsRef.current;
+      const nextElapsedMilliseconds = Math.min(
+        totalDuration,
+        elapsedMillisecondsRef.current + deltaMilliseconds,
+      );
+      elapsedMillisecondsRef.current = nextElapsedMilliseconds;
+      if (!isManuallyDraggingRef.current) {
+        applyScrollPositionForElapsed(nextElapsedMilliseconds);
+      }
+
+      if (nextElapsedMilliseconds >= totalDuration) {
+        stopTicking();
+        setIsPlaying(false);
+      }
+    }, SCROLL_TICK_INTERVAL_MILLISECONDS);
+  }, [applyScrollPositionForElapsed, stopTicking]);
+
+  // Stop the interval if the component unmounts mid-playback.
+  useEffect(() => stopTicking, [stopTicking]);
 
   const play = useCallback(() => {
     if (!isAutoScrollAvailable) return;
-    lastFrameTimestampSharedValue.value = 0;
-    isPlayingSharedValue.value = true;
     setIsPlaying(true);
-  }, [isAutoScrollAvailable, isPlayingSharedValue, lastFrameTimestampSharedValue]);
+    startTicking();
+  }, [isAutoScrollAvailable, startTicking]);
 
   const pause = useCallback(() => {
-    isPlayingSharedValue.value = false;
+    stopTicking();
     setIsPlaying(false);
-  }, [isPlayingSharedValue]);
+  }, [stopTicking]);
 
   const togglePlayPause = useCallback(() => {
     if (isPlaying) pause();
@@ -134,57 +195,59 @@ export function useScrollEngine({
   }, [isPlaying, pause, play]);
 
   const resetPlaybackToStart = useCallback(() => {
-    isPlayingSharedValue.value = false;
-    elapsedMillisecondsSharedValue.value = 0;
-    lastFrameTimestampSharedValue.value = 0;
+    stopTicking();
+    elapsedMillisecondsRef.current = 0;
+    lastTickTimestampRef.current = null;
     setIsPlaying(false);
-  }, [elapsedMillisecondsSharedValue, isPlayingSharedValue, lastFrameTimestampSharedValue]);
+  }, [stopTicking]);
 
-  const handleScrollViewLayout = useCallback(
-    (layoutChangeEvent: LayoutChangeEvent) => {
-      scrollViewHeightSharedValue.value = layoutChangeEvent.nativeEvent.layout.height;
-    },
-    [scrollViewHeightSharedValue],
-  );
+  const handleScrollViewLayout = useCallback((layoutChangeEvent: LayoutChangeEvent) => {
+    scrollViewHeightRef.current = layoutChangeEvent.nativeEvent.layout.height;
+  }, []);
 
   const handleContentSizeChange = useCallback(
     (_contentWidth: number, contentHeight: number) => {
-      contentHeightSharedValue.value = contentHeight;
+      contentHeightRef.current = contentHeight;
     },
-    [contentHeightSharedValue],
+    [],
   );
 
   const handleManualScrollBeginDrag = useCallback(() => {
-    if (isPlayingSharedValue.value) {
-      isPlayingSharedValue.value = false;
-      setIsPlaying(false);
-    }
-  }, [isPlayingSharedValue]);
+    // Deliberately does not pause — see the module comment. The tick loop (if
+    // running) keeps advancing the playhead but stops calling scrollTo until the
+    // drag settles, so it doesn't fight the gesture.
+    isManuallyDraggingRef.current = true;
+  }, []);
 
   const handleManualScrollPositionSettled = useCallback(
     (scrollEvent: NativeSyntheticEvent<NativeScrollEvent>) => {
+      isManuallyDraggingRef.current = false;
       const { contentOffset, contentSize, layoutMeasurement } = scrollEvent.nativeEvent;
       const maximumScrollOffset = Math.max(0, contentSize.height - layoutMeasurement.height);
-      const playbackFraction =
-        maximumScrollOffset > 0 ? contentOffset.y / maximumScrollOffset : 0;
-      elapsedMillisecondsSharedValue.value =
-        playbackFraction * totalDurationMillisecondsSharedValue.value;
+      const pixelFraction = maximumScrollOffset > 0 ? contentOffset.y / maximumScrollOffset : 0;
+      const breakpoints = buildScrollPacingBreakpoints(
+        lineTimeWeightsRef.current,
+        lineHeightsPixelsRef.current,
+      );
+      const timeFraction = mapPixelFractionToTimeFraction(pixelFraction, breakpoints);
+      elapsedMillisecondsRef.current = timeFraction * totalDurationMillisecondsRef.current;
     },
-    [elapsedMillisecondsSharedValue, totalDurationMillisecondsSharedValue],
+    [],
   );
 
   return {
     isAutoScrollAvailable,
     isPlaying,
-    animatedScrollViewRef,
+    scrollViewRef,
     play,
     pause,
     togglePlayPause,
     resetPlaybackToStart,
     handleScrollViewLayout,
     handleContentSizeChange,
-    elapsedMillisecondsSharedValue,
+    registerLineHeight,
     handleManualScrollBeginDrag,
     handleManualScrollPositionSettled,
+    elapsedMillisecondsRef,
   };
 }

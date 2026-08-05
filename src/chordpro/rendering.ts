@@ -352,3 +352,35 @@ export function countLinesForBpmTiming(renderableLines: RenderableChordSheetLine
     return totalLineCount + 1;
   }, 0);
 }
+
+/**
+ * A `{comment: ...}` line isn't sung or played — it's a reference label — so it
+ * shouldn't get scrolled past at the same pace as an actual musical line. This is
+ * the weight it gets relative to a normal line (1) for `computeLineTimeWeights`.
+ * Small enough to read as a quick transition, not zero (a zero-width segment would
+ * be an instant jump, which the scroll engine is deliberately built to never do).
+ */
+const COMMENT_LINE_RELATIVE_TIME_WEIGHT = 0.2;
+
+/**
+ * Per-line relative time weights used to pace the scroll engine's auto-scroll
+ * *within* a song's already-computed total duration (§5.2) — this doesn't change
+ * how long the song takes overall, only how that fixed total gets distributed
+ * across the chart: a `{comment: ...}` label gets a much smaller time slice than a
+ * real musical line, so the scroll visibly speeds up while passing over it (a fast
+ * transition, not an instant jump) and slows back down for the surrounding
+ * content — the same total elapsed time still lands on the same total scroll
+ * distance either way, since every other line's slice grows very slightly to
+ * absorb what the comment gave up. Uses the same per-type weighting as
+ * `countLinesForBpmTiming` for everything except comments.
+ */
+export function computeLineTimeWeights(renderableLines: RenderableChordSheetLine[]): number[] {
+  return renderableLines.map((renderableLine) => {
+    if (renderableLine.type === 'comment') return COMMENT_LINE_RELATIVE_TIME_WEIGHT;
+    if (renderableLine.type === 'tabBlock') return renderableLine.tabLines.length;
+    if (renderableLine.type === 'repeatedChordGroup') {
+      return renderableLine.groupLines.length * renderableLine.repeatCount;
+    }
+    return 1;
+  });
+}
