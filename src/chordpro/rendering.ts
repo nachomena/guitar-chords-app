@@ -52,7 +52,12 @@ function collapseRepeatedChordTokens(tokens: RenderableLyricToken[]): Renderable
     const lastTokenInRun = tokens[runEndIndex];
     collapsedTokens.push(
       runLength > 1
-        ? { ...lastTokenInRun, chordSymbol: runChordSymbol, chordDisplayLabel: `${runChordSymbol}x${runLength}` }
+        ? {
+            ...lastTokenInRun,
+            chordSymbol: runChordSymbol,
+            chordDisplayLabel: runChordSymbol,
+            repeatCountLabel: `x${runLength}`,
+          }
         : lastTokenInRun,
     );
 
@@ -67,7 +72,9 @@ export function splitLyricLineIntoRenderableTokens(
 ): RenderableLyricToken[] {
   if (lyricLine.chords.length === 0) {
     const lyricText = lyricLine.text.length > 0 ? lyricLine.text : ' ';
-    return [{ chordSymbol: null, chordDisplayLabel: null, strumAccentGlyphs: null, lyricText }];
+    return [
+      { chordSymbol: null, chordDisplayLabel: null, repeatCountLabel: null, strumAccentGlyphs: null, lyricText },
+    ];
   }
 
   const chordPlacementsSortedByPosition = [...lyricLine.chords].sort(
@@ -81,6 +88,7 @@ export function splitLyricLineIntoRenderableTokens(
     renderableTokens.push({
       chordSymbol: null,
       chordDisplayLabel: null,
+      repeatCountLabel: null,
       strumAccentGlyphs: null,
       lyricText: lyricLine.text.slice(0, firstChordPlacement.charIndex),
     });
@@ -97,6 +105,7 @@ export function splitLyricLineIntoRenderableTokens(
       renderableTokens.push({
         chordSymbol: null,
         chordDisplayLabel: null,
+        repeatCountLabel: null,
         strumAccentGlyphs: normalizeStrumAccentGlyphs(chordPlacement.symbol),
         lyricText,
       });
@@ -106,12 +115,96 @@ export function splitLyricLineIntoRenderableTokens(
     renderableTokens.push({
       chordSymbol: chordPlacement.symbol,
       chordDisplayLabel: chordPlacement.symbol,
+      repeatCountLabel: null,
       strumAccentGlyphs: null,
       lyricText,
     });
   });
 
   return collapseRepeatedChordTokens(renderableTokens);
+}
+
+/**
+ * Splits a `distributedChordLine`'s real lyric text into one word-chunk per chord
+ * token, front-loaded so a short lyric (fewer words than chords, e.g. one ad-lib
+ * word under three chords) lands entirely under the first chord(s) instead of
+ * leaving later chords with nothing under them — which otherwise reads fine, but a
+ * naive even split (last tokens get the leftover word) would put the word under the
+ * *last* chord, which doesn't match how the phrase is actually sung. Letting each
+ * chord keep its own word chunk (rather than the previous "spread chords evenly
+ * across the full row width, print the whole lyric line separately underneath"
+ * approach) also means the row's width now tracks the real lyric text's length
+ * instead of ballooning out to the container's full width when the lyric is short.
+ *
+ * Chunks are sized by *character* length, not word count: each chord greedily takes
+ * whole words until it's as close as it can get to an equal share (in characters) of
+ * whatever text is still left, then hands the rest on to the remaining chords with a
+ * freshly recomputed target. Splitting by word count alone looks visibly uneven the
+ * moment word lengths vary — e.g. "asustes si me" (13 chars) next to "río como" (8
+ * chars) for two chords that should otherwise look evenly spaced — since it ignores
+ * how wide each chunk actually renders. Character count is a reasonable proxy for
+ * render width without needing real text measurement (RN has no synchronous way to
+ * measure text before layout).
+ *
+ * Strum-accent tokens (e.g. the `↓` in `[Em] [↓]`) never receive their own chunk —
+ * an accent annotates the chord right before it rather than singing its own
+ * syllable, so it always keeps an empty `lyricText`. Only "real" chord tokens
+ * compete for word chunks.
+ */
+export function distributeLyricWordsAcrossChordTokens(
+  lyricText: string,
+  chordTokens: RenderableLyricToken[],
+): RenderableLyricToken[] {
+  const trimmedLyricText = lyricText.trim();
+  const words = trimmedLyricText.length > 0 ? trimmedLyricText.split(/\s+/) : [];
+
+  const realChordTokenCount = chordTokens.filter((token) => token.strumAccentGlyphs === null).length;
+  let wordCursor = 0;
+  let realChordTokensAssignedSoFar = 0;
+
+  return chordTokens.map((chordToken) => {
+    if (chordToken.strumAccentGlyphs !== null) {
+      return { ...chordToken, lyricText: '' };
+    }
+
+    realChordTokensAssignedSoFar += 1;
+    const remainingWords = words.slice(wordCursor);
+    const isLastRealChordToken = realChordTokensAssignedSoFar === realChordTokenCount;
+
+    // The last chord always takes everything left over, rather than running the
+    // same target-based logic — that avoids stray words being stranded by rounding
+    // and matches the front-loading behavior above (a short remainder lands on the
+    // next chord in line, never silently dropped).
+    if (isLastRealChordToken || remainingWords.length === 0) {
+      wordCursor = words.length;
+      return { ...chordToken, lyricText: remainingWords.join(' ') };
+    }
+
+    const chordTokensLeft = realChordTokenCount - realChordTokensAssignedSoFar + 1;
+    const targetCharacterLength = remainingWords.join(' ').length / chordTokensLeft;
+
+    let accumulatedLength = 0;
+    let wordCountForThisToken = 0;
+    for (const word of remainingWords) {
+      if (wordCountForThisToken === 0) {
+        // Always take at least one word, even if it already overshoots the target —
+        // a chord can't be left with a genuinely empty chunk while words remain.
+        accumulatedLength = word.length;
+        wordCountForThisToken = 1;
+        continue;
+      }
+      const prospectiveLength = accumulatedLength + 1 + word.length; // +1 for the joining space
+      const overshootIfTaken = prospectiveLength - targetCharacterLength;
+      const undershootIfStopped = targetCharacterLength - accumulatedLength;
+      if (overshootIfTaken > undershootIfStopped) break;
+      accumulatedLength = prospectiveLength;
+      wordCountForThisToken += 1;
+    }
+
+    const wordsForThisToken = remainingWords.slice(0, wordCountForThisToken);
+    wordCursor += wordCountForThisToken;
+    return { ...chordToken, lyricText: wordsForThisToken.join(' ') };
+  });
 }
 
 const STRUM_STROKE_GLYPHS_BY_CHARACTER: Record<string, string> = {

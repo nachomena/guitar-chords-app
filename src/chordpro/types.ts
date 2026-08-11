@@ -49,12 +49,18 @@ export type RenderableLyricToken = {
   /** The real chord name — used to look up/open the chord diagram on tap. Null for strum-accent tokens (there's no chord to look up). */
   chordSymbol: string | null;
   /**
-   * What's actually printed as the chord label. Equal to `chordSymbol` normally;
-   * becomes e.g. "Gx2" when consecutive identical chords with no lyric text between
-   * them (`[G][G]`) are collapsed into one repeat-count label. Null for strum-accent
-   * tokens, which render `strumAccentGlyphs` in a pill instead of a plain label.
+   * What's actually printed as the chord label — equal to `chordSymbol`. Null for
+   * strum-accent tokens, which render `strumAccentGlyphs` in a pill instead of a
+   * plain label.
    */
   chordDisplayLabel: string | null;
+  /**
+   * Set to e.g. "x2" when consecutive identical chords with no lyric text between
+   * them (`[G][G]`) are collapsed into one repeat-count label — rendered right after
+   * `chordDisplayLabel`, styled distinctly (lighter weight/color) so it reads as a
+   * count annotation rather than part of the chord name. Null otherwise.
+   */
+  repeatCountLabel: string | null;
   /**
    * Set when a bracket's contents are stroke glyphs (↓/↑/x/–) rather than a chord
    * name — e.g. `[A] [↓ ↓ ↓ ↓]` for "A, strummed with 4 downstrokes" inline in an

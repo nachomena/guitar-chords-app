@@ -3,7 +3,7 @@
 // (§8.9 lists one as an option, not a requirement — see the implementation plan's
 // deviation notes). Multiple voicings page via a swipeable ScrollView with a
 // dot-indicator row, defaulting to the first/most common voicing.
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -46,12 +46,24 @@ export function ChordPopover({
   // The sheet has no horizontal padding, so a page can be exactly the window's
   // width — read live so rotation/split-screen don't leave a stale value.
   const voicingPageWidth = useWindowDimensions().width;
+  const voicingScrollViewRef = useRef<ScrollView>(null);
 
   const lookupResult = chordSymbol ? lookupChordDiagram(chordSymbol) : null;
 
   const handleVoicingPageScrollEnd = useCallback(
     (scrollEvent: NativeSyntheticEvent<NativeScrollEvent>) => {
       const pageIndex = Math.round(scrollEvent.nativeEvent.contentOffset.x / voicingPageWidth);
+      setSelectedVoicingIndex(pageIndex);
+    },
+    [voicingPageWidth],
+  );
+
+  // Swiping the ScrollView is the primary way to page through voicings, but it's an
+  // unreliable gesture on some platforms (e.g. mouse-drag on web) — the dots double
+  // as tappable page buttons so there's always a reliable way to reach every voicing.
+  const handleVoicingDotPress = useCallback(
+    (pageIndex: number) => {
+      voicingScrollViewRef.current?.scrollTo({ x: pageIndex * voicingPageWidth, animated: true });
       setSelectedVoicingIndex(pageIndex);
     },
     [voicingPageWidth],
@@ -69,8 +81,13 @@ export function ChordPopover({
       animationType="fade"
       onRequestClose={handleClose}
     >
-      <Pressable style={styles.backdrop} onPress={handleClose}>
-        <Pressable
+      <View style={styles.backdrop}>
+        {/* A sibling of the sheet, not an ancestor — if this Pressable wrapped the
+            sheet's content instead, it would claim the touch responder before the
+            ScrollView below gets a chance to recognize a horizontal swipe, breaking
+            paging between voicings (taps would still work, drags wouldn't). */}
+        <Pressable style={StyleSheet.absoluteFillObject} onPress={handleClose} />
+        <View
           style={[
             styles.sheet,
             {
@@ -94,6 +111,7 @@ export function ChordPopover({
           {lookupResult ? (
             <>
               <ScrollView
+                ref={voicingScrollViewRef}
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
@@ -112,18 +130,23 @@ export function ChordPopover({
               {lookupResult.positions.length > 1 ? (
                 <View style={styles.voicingDotRow}>
                   {lookupResult.positions.map((_position, positionIndex) => (
-                    <View
+                    <Pressable
                       key={positionIndex}
-                      style={[
-                        styles.voicingDot,
-                        {
-                          backgroundColor:
-                            positionIndex === selectedVoicingIndex
-                              ? colorPalette.accent
-                              : colorPalette.neutral[600],
-                        },
-                      ]}
-                    />
+                      hitSlop={8}
+                      onPress={() => handleVoicingDotPress(positionIndex)}
+                    >
+                      <View
+                        style={[
+                          styles.voicingDot,
+                          {
+                            backgroundColor:
+                              positionIndex === selectedVoicingIndex
+                                ? colorPalette.accent
+                                : colorPalette.neutral[600],
+                          },
+                        ]}
+                      />
+                    </Pressable>
                   ))}
                 </View>
               ) : null}
@@ -139,8 +162,8 @@ export function ChordPopover({
               No diagram available
             </Text>
           )}
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
