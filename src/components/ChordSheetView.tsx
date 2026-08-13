@@ -7,7 +7,11 @@
 // differ from the Settings theme (§5.1/§5.6).
 import { Platform, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 
-import { distributeLyricWordsAcrossChordTokens, type RenderableChordSheetLine } from '../chordpro/rendering';
+import {
+  buildTokenRowSegments,
+  distributeLyricWordsAcrossChordTokens,
+  type RenderableChordSheetLine,
+} from '../chordpro/rendering';
 import type { RenderableLyricToken } from '../chordpro/types';
 import { useAppTheme } from '../theme/ThemeProvider';
 
@@ -59,7 +63,7 @@ function LyricLineTokenView({
   token: RenderableLyricToken;
   /** A strum accent (e.g. `↓` in `[Em] [↓]`) immediately following this chord in the
    * source, rendered right next to the chord label instead of as its own token — see
-   * `mergeAttachedStrumAccents`'s doc comment for why. */
+   * `buildTokenRowSegments`'s doc comment (in chordpro/rendering.ts) for why. */
   attachedStrumAccentGlyphs?: string | null;
   lyricFontSizePixels: number;
   chordFontSizePixels: number;
@@ -135,39 +139,53 @@ function LyricLineTokenView({
 }
 
 /**
- * A strum-accent token immediately following the chord it accents (`[Em] [↓]`) isn't
- * really an independent column in the row — it's a small badge that belongs right
- * next to that chord's label. Rendering it as its own sibling token breaks down as
- * soon as the chord's own lyricText is long (e.g. a whole sung phrase under a
- * distributedChordLine's word-chunked "Em"): the chord's token box widens to fit
- * that text, so the accent — positioned after that whole wide box — ends up far to
- * the right of the chord label it's meant to sit beside, no matter how small the
- * margin between the two tokens is. Merging the accent into the chord token's own
- * header (see `attachedStrumAccentGlyphs` above) fixes this at the source: the
- * accent renders next to the chord label itself, not after the wide box beneath it.
+ * A `(...)  [pattern]` inline strum group (see chordpro/rendering.ts's doc comment
+ * above `TokenRowSegment`) — its chords render side by side inside a small dashed
+ * box, same column-stacked chord-over-word token as everywhere else, with the
+ * pattern glyphs in a pill right next to the box.
  */
-function mergeAttachedStrumAccents(
-  tokens: RenderableLyricToken[],
-): Array<{ token: RenderableLyricToken; attachedStrumAccentGlyphs: string | null }> {
-  const mergedTokens: Array<{ token: RenderableLyricToken; attachedStrumAccentGlyphs: string | null }> = [];
-  let tokenIndex = 0;
-  while (tokenIndex < tokens.length) {
-    const token = tokens[tokenIndex];
-    const nextToken = tokens[tokenIndex + 1];
-    const nextIsAttachedStrumAccent =
-      token.strumAccentGlyphs === null &&
-      token.chordDisplayLabel !== null &&
-      nextToken?.strumAccentGlyphs != null;
-
-    if (nextIsAttachedStrumAccent) {
-      mergedTokens.push({ token, attachedStrumAccentGlyphs: nextToken.strumAccentGlyphs });
-      tokenIndex += 2; // the next token was consumed as this chord's accent
-    } else {
-      mergedTokens.push({ token, attachedStrumAccentGlyphs: null });
-      tokenIndex += 1;
-    }
-  }
-  return mergedTokens;
+function InlineStrumGroupBox({
+  chordTokens,
+  strumPatternGlyphs,
+  lyricFontSizePixels,
+  chordFontSizePixels,
+  colors,
+  onChordPress,
+  isChordSymbolRecognized,
+}: {
+  chordTokens: RenderableLyricToken[];
+  strumPatternGlyphs: string;
+  lyricFontSizePixels: number;
+  chordFontSizePixels: number;
+  colors: ChordSheetViewColors;
+  onChordPress: (chordSymbol: string) => void;
+  isChordSymbolRecognized?: (chordSymbol: string) => boolean;
+}) {
+  return (
+    <View style={styles.inlineStrumGroupRow}>
+      <View style={[styles.inlineStrumGroupBox, { borderColor: colors.divider }]}>
+        {chordTokens.map((chordToken, chordTokenIndex) => (
+          <LyricLineTokenView
+            key={chordTokenIndex}
+            token={chordToken}
+            lyricFontSizePixels={lyricFontSizePixels}
+            chordFontSizePixels={chordFontSizePixels}
+            colors={colors}
+            onChordPress={onChordPress}
+            isChordSymbolRecognized={isChordSymbolRecognized}
+          />
+        ))}
+      </View>
+      {strumPatternGlyphs ? (
+        <StrumAccentPill
+          glyphs={strumPatternGlyphs}
+          chordFontSizePixels={chordFontSizePixels}
+          colors={colors}
+          style={styles.inlineStrumGroupPatternPill}
+        />
+      ) : null}
+    </View>
+  );
 }
 
 function TokenRow({
@@ -187,21 +205,34 @@ function TokenRow({
   onChordPress: (chordSymbol: string) => void;
   isChordSymbolRecognized?: (chordSymbol: string) => boolean;
 }) {
-  const mergedTokens = mergeAttachedStrumAccents(tokens);
+  const segments = buildTokenRowSegments(tokens);
   return (
     <View style={styles.lyricLine} onLayout={onLayout}>
-      {mergedTokens.map(({ token, attachedStrumAccentGlyphs }, tokenIndex) => (
-        <LyricLineTokenView
-          key={tokenIndex}
-          token={token}
-          attachedStrumAccentGlyphs={attachedStrumAccentGlyphs}
-          lyricFontSizePixels={lyricFontSizePixels}
-          chordFontSizePixels={chordFontSizePixels}
-          colors={colors}
-          onChordPress={onChordPress}
-          isChordSymbolRecognized={isChordSymbolRecognized}
-        />
-      ))}
+      {segments.map((segment, segmentIndex) =>
+        segment.type === 'inlineStrumGroup' ? (
+          <InlineStrumGroupBox
+            key={segmentIndex}
+            chordTokens={segment.chordTokens}
+            strumPatternGlyphs={segment.strumPatternGlyphs}
+            lyricFontSizePixels={lyricFontSizePixels}
+            chordFontSizePixels={chordFontSizePixels}
+            colors={colors}
+            onChordPress={onChordPress}
+            isChordSymbolRecognized={isChordSymbolRecognized}
+          />
+        ) : (
+          <LyricLineTokenView
+            key={segmentIndex}
+            token={segment.token}
+            attachedStrumAccentGlyphs={segment.attachedStrumAccentGlyphs}
+            lyricFontSizePixels={lyricFontSizePixels}
+            chordFontSizePixels={chordFontSizePixels}
+            colors={colors}
+            onChordPress={onChordPress}
+            isChordSymbolRecognized={isChordSymbolRecognized}
+          />
+        ),
+      )}
     </View>
   );
 }
@@ -451,5 +482,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
+  },
+  inlineStrumGroupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  inlineStrumGroupBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    padding: 6,
+  },
+  inlineStrumGroupPatternPill: {
+    marginLeft: 6,
   },
 });

@@ -1,5 +1,6 @@
 import { parseChordProSongText } from './parser';
 import {
+  buildTokenRowSegments,
   computeLineTimeWeights,
   convertStrumPatternToDisplay,
   countLinesForBpmTiming,
@@ -393,6 +394,69 @@ describe('splitLyricLineIntoRenderableTokens', () => {
       { chordSymbol: null, chordDisplayLabel: null, repeatCountLabel: null, strumAccentGlyphs: '↓', lyricText: '' },
       { chordSymbol: null, chordDisplayLabel: null, repeatCountLabel: null, strumAccentGlyphs: '↓', lyricText: '' },
     ]);
+  });
+});
+
+describe('buildTokenRowSegments', () => {
+  it('passes plain chord/lyric tokens through unchanged when nothing is attached or grouped', () => {
+    const parsedSong = parseChordProSongText('[A] [Em] [Bm]');
+    const lyricLine = parsedSong.lines[0] as LyricParsedLine;
+    const tokens = splitLyricLineIntoRenderableTokens(lyricLine);
+
+    expect(buildTokenRowSegments(tokens)).toEqual([
+      { type: 'token', token: tokens[0], attachedStrumAccentGlyphs: null },
+      { type: 'token', token: tokens[1], attachedStrumAccentGlyphs: null },
+      { type: 'token', token: tokens[2], attachedStrumAccentGlyphs: null },
+    ]);
+  });
+
+  it('merges a strum-accent token into the immediately preceding chord as an attached accent', () => {
+    const parsedSong = parseChordProSongText('[Em] [↓]');
+    const lyricLine = parsedSong.lines[0] as LyricParsedLine;
+    const tokens = splitLyricLineIntoRenderableTokens(lyricLine);
+
+    expect(buildTokenRowSegments(tokens)).toEqual([
+      { type: 'token', token: tokens[0], attachedStrumAccentGlyphs: '↓' },
+    ]);
+  });
+
+  it('extracts a "(...) [pattern]" run of chords into an inlineStrumGroup, leaving surrounding chords as plain tokens', () => {
+    // Bm7 and the first Em are ungrouped (keep whatever strum was already in
+    // effect); only the parenthesized "Em G" gets this specific pattern.
+    const parsedSong = parseChordProSongText('[Bm7] [Em] ([Em] [G])[↓ ↑ ↓]');
+    const lyricLine = parsedSong.lines[0] as LyricParsedLine;
+    const tokens = splitLyricLineIntoRenderableTokens(lyricLine);
+    const segments = buildTokenRowSegments(tokens);
+
+    expect(segments).toHaveLength(3);
+    expect(segments[0]).toEqual({ type: 'token', token: tokens[0], attachedStrumAccentGlyphs: null });
+
+    const secondSegment = segments[1];
+    expect(secondSegment.type).toBe('token');
+    if (secondSegment.type !== 'token') throw new Error('expected token');
+    expect(secondSegment.token.chordDisplayLabel).toBe('Em');
+    expect(secondSegment.token.lyricText).not.toContain('(');
+
+    const groupSegment = segments[2];
+    expect(groupSegment.type).toBe('inlineStrumGroup');
+    if (groupSegment.type !== 'inlineStrumGroup') throw new Error('expected inlineStrumGroup');
+    expect(groupSegment.chordTokens.map((token) => token.chordDisplayLabel)).toEqual(['Em', 'G']);
+    expect(groupSegment.chordTokens[1].lyricText).not.toContain(')');
+    expect(groupSegment.strumPatternGlyphs).toBe('↓ ↑ ↓');
+  });
+
+  it('gives a group with no trailing pattern bracket an empty strumPatternGlyphs', () => {
+    const parsedSong = parseChordProSongText('([Em] [G])');
+    const lyricLine = parsedSong.lines[0] as LyricParsedLine;
+    const tokens = splitLyricLineIntoRenderableTokens(lyricLine);
+    const segments = buildTokenRowSegments(tokens);
+
+    expect(segments).toHaveLength(1);
+    const groupSegment = segments[0];
+    expect(groupSegment.type).toBe('inlineStrumGroup');
+    if (groupSegment.type !== 'inlineStrumGroup') throw new Error('expected inlineStrumGroup');
+    expect(groupSegment.chordTokens.map((token) => token.chordDisplayLabel)).toEqual(['Em', 'G']);
+    expect(groupSegment.strumPatternGlyphs).toBe('');
   });
 });
 

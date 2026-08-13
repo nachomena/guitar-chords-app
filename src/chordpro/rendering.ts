@@ -24,6 +24,14 @@ function normalizeStrumAccentGlyphs(bracketContent: string): string {
 }
 
 /**
+ * Marker characters for an inline strum group — a "(" "..." ")" wrapped run of
+ * chords within a line, given its own strum pattern (see `TokenRowSegment`'s doc
+ * comment below for the full notation and rationale).
+ */
+const INLINE_GROUP_OPEN_MARKER_CHARACTER = '(';
+const INLINE_GROUP_CLOSE_MARKER_CHARACTER = ')';
+
+/**
  * Merges runs of consecutive tokens that repeat the same chord with no real lyric
  * text between them (a `[G][G]` back-to-back repeat some sources use to mark a chord
  * held an extra bar) into a single token labelled "Gx2" — but only when there's
@@ -149,8 +157,24 @@ export function splitLyricLineIntoRenderableTokens(
  * Strum-accent tokens (e.g. the `↓` in `[Em] [↓]`) never receive their own chunk —
  * an accent annotates the chord right before it rather than singing its own
  * syllable, so it always keeps an empty `lyricText`. Only "real" chord tokens
- * compete for word chunks.
+ * (`chordDisplayLabel !== null`) compete for word chunks — this also correctly
+ * excludes a chordless leading text token (see `splitLyricLineIntoRenderableTokens`),
+ * which a line-initial inline strum group's "(" can otherwise land on.
+ *
+ * Runs *before* `buildTokenRowSegments` in the render pipeline (a distributedChordLine
+ * word-chunks its real lyric text first, then the result gets grouped into segments),
+ * so any "(" / ")" inline-strum-group marker embedded in a token's original lyricText
+ * (see `buildTokenRowSegments`'s doc comment) is preserved through the rewrite rather
+ * than being silently overwritten — otherwise the group boundary those markers encode
+ * would be destroyed before `buildTokenRowSegments` ever gets to read it.
  */
+function preserveInlineGroupMarkers(originalLyricText: string, newLyricText: string): string {
+  const hasOpenMarker = originalLyricText.includes(INLINE_GROUP_OPEN_MARKER_CHARACTER);
+  const hasCloseMarker = originalLyricText.includes(INLINE_GROUP_CLOSE_MARKER_CHARACTER);
+  if (!hasOpenMarker && !hasCloseMarker) return newLyricText;
+  return `${hasOpenMarker ? INLINE_GROUP_OPEN_MARKER_CHARACTER : ''}${newLyricText}${hasCloseMarker ? INLINE_GROUP_CLOSE_MARKER_CHARACTER : ''}`;
+}
+
 export function distributeLyricWordsAcrossChordTokens(
   lyricText: string,
   chordTokens: RenderableLyricToken[],
@@ -158,13 +182,13 @@ export function distributeLyricWordsAcrossChordTokens(
   const trimmedLyricText = lyricText.trim();
   const words = trimmedLyricText.length > 0 ? trimmedLyricText.split(/\s+/) : [];
 
-  const realChordTokenCount = chordTokens.filter((token) => token.strumAccentGlyphs === null).length;
+  const realChordTokenCount = chordTokens.filter((token) => token.chordDisplayLabel !== null).length;
   let wordCursor = 0;
   let realChordTokensAssignedSoFar = 0;
 
   return chordTokens.map((chordToken) => {
-    if (chordToken.strumAccentGlyphs !== null) {
-      return { ...chordToken, lyricText: '' };
+    if (chordToken.chordDisplayLabel === null) {
+      return { ...chordToken, lyricText: preserveInlineGroupMarkers(chordToken.lyricText, '') };
     }
 
     realChordTokensAssignedSoFar += 1;
@@ -177,7 +201,7 @@ export function distributeLyricWordsAcrossChordTokens(
     // next chord in line, never silently dropped).
     if (isLastRealChordToken || remainingWords.length === 0) {
       wordCursor = words.length;
-      return { ...chordToken, lyricText: remainingWords.join(' ') };
+      return { ...chordToken, lyricText: preserveInlineGroupMarkers(chordToken.lyricText, remainingWords.join(' ')) };
     }
 
     const chordTokensLeft = realChordTokenCount - realChordTokensAssignedSoFar + 1;
@@ -203,8 +227,106 @@ export function distributeLyricWordsAcrossChordTokens(
 
     const wordsForThisToken = remainingWords.slice(0, wordCountForThisToken);
     wordCursor += wordCountForThisToken;
-    return { ...chordToken, lyricText: wordsForThisToken.join(' ') };
+    return { ...chordToken, lyricText: preserveInlineGroupMarkers(chordToken.lyricText, wordsForThisToken.join(' ')) };
   });
+}
+
+/**
+ * Non-standard extension: wrapping a run of chords in "(" "..." ")" *within* a
+ * chord-only line, immediately followed by a strum-accent-glyph bracket, marks that
+ * sub-group as strummed with its own pattern — distinct from the rest of the line,
+ * which keeps whatever strum was already in effect. e.g.
+ * ```
+ * [Bm7] [Em] ([Em] [G])[↓–––↓––↑↓↑↓–––––]
+ * ```
+ * says "Bm7 and the first Em play normally; Em and G together are strummed with
+ * that specific down/up pattern." This mirrors the whole-line `(...)xN` repeat-group
+ * convention (§ `GROUP_OPEN_MARKER_REGEX` above) — same "(" "..." ")" bracketing —
+ * but scoped to a run of chords *within* a line instead of whole lines, and with a
+ * strum pattern instead of a repeat count. The pattern must use the same stroke-glyph
+ * vocabulary (↓↑x–) as a single-chord strum accent, not raw D/U/X/- letters — a
+ * letter-based pattern bracket would be ambiguous with a real chord name (e.g. a
+ * bracket containing just "D" is already a valid chord).
+ */
+export type TokenRowSegment =
+  | { type: 'token'; token: RenderableLyricToken; attachedStrumAccentGlyphs: string | null }
+  | { type: 'inlineStrumGroup'; chordTokens: RenderableLyricToken[]; strumPatternGlyphs: string };
+
+/**
+ * Turns a line's flat token list into renderable segments: a plain chord/lyric token
+ * (optionally carrying a single attached strum accent — see below), or an
+ * `inlineStrumGroup` for a `(...)` sub-run of chords with its own strum pattern (see
+ * this module's doc comment above `TokenRowSegment`).
+ *
+ * Also merges a strum-accent token that immediately follows a single chord (`[Em]
+ * [↓]`, nothing but whitespace between them) into that chord's own segment as
+ * `attachedStrumAccentGlyphs`, rather than leaving it as its own token. Rendering it
+ * as an independent sibling token breaks down as soon as the chord's own lyricText is
+ * long (e.g. a whole sung phrase under a distributedChordLine's word-chunked "Em"):
+ * the chord's token box widens to fit that text, so the accent — positioned after
+ * that whole wide box — ends up far to the right of the chord label it's meant to sit
+ * beside, no matter how small the margin between the two tokens is. Attaching it to
+ * the chord's own segment fixes this at the source.
+ */
+export function buildTokenRowSegments(tokens: RenderableLyricToken[]): TokenRowSegment[] {
+  const segments: TokenRowSegment[] = [];
+  let tokenIndex = 0;
+
+  while (tokenIndex < tokens.length) {
+    const token = tokens[tokenIndex];
+
+    if (token.strumAccentGlyphs === null && token.lyricText.includes(INLINE_GROUP_OPEN_MARKER_CHARACTER)) {
+      const strippedOpenToken = {
+        ...token,
+        lyricText: token.lyricText.replace(INLINE_GROUP_OPEN_MARKER_CHARACTER, ''),
+      };
+      // When the group opens right at the start of a line, the "(" lands on its own
+      // chordless leading token (see splitLyricLineIntoRenderableTokens's leading-text
+      // token) — once stripped, that token has nothing left to show, so drop it
+      // instead of rendering a pointless empty box.
+      const isVacuousAfterStripping =
+        strippedOpenToken.chordDisplayLabel === null &&
+        strippedOpenToken.strumAccentGlyphs === null &&
+        strippedOpenToken.lyricText.trim() === '';
+      if (!isVacuousAfterStripping) {
+        segments.push({ type: 'token', token: strippedOpenToken, attachedStrumAccentGlyphs: null });
+      }
+      tokenIndex += 1;
+
+      const groupChordTokens: RenderableLyricToken[] = [];
+      while (tokenIndex < tokens.length) {
+        const groupToken = tokens[tokenIndex];
+        const closesGroup = groupToken.lyricText.includes(INLINE_GROUP_CLOSE_MARKER_CHARACTER);
+        groupChordTokens.push({
+          ...groupToken,
+          lyricText: groupToken.lyricText.replace(INLINE_GROUP_CLOSE_MARKER_CHARACTER, ''),
+        });
+        tokenIndex += 1;
+        if (closesGroup) break;
+      }
+
+      const possiblePatternToken = tokens[tokenIndex];
+      const strumPatternGlyphs = possiblePatternToken?.strumAccentGlyphs ?? null;
+      if (strumPatternGlyphs !== null) tokenIndex += 1; // consumed as this group's pattern
+
+      segments.push({ type: 'inlineStrumGroup', chordTokens: groupChordTokens, strumPatternGlyphs: strumPatternGlyphs ?? '' });
+      continue;
+    }
+
+    if (token.strumAccentGlyphs === null && token.chordDisplayLabel !== null) {
+      const nextToken = tokens[tokenIndex + 1];
+      if (nextToken?.strumAccentGlyphs != null) {
+        segments.push({ type: 'token', token, attachedStrumAccentGlyphs: nextToken.strumAccentGlyphs });
+        tokenIndex += 2;
+        continue;
+      }
+    }
+
+    segments.push({ type: 'token', token, attachedStrumAccentGlyphs: null });
+    tokenIndex += 1;
+  }
+
+  return segments;
 }
 
 const STRUM_STROKE_GLYPHS_BY_CHARACTER: Record<string, string> = {
