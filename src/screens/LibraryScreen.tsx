@@ -22,9 +22,9 @@ type LibrarySortOption = 'title' | 'artist' | 'recentlyAdded';
 function TunerIcon({ color }: { color: string }) {
   return (
     <Svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M9 18V5l12-2v13" />
-      <Circle cx={6} cy={18} r={3} />
-      <Circle cx={18} cy={16} r={3} />
+      <Path d="M8 2v10a4 4 0 0 0 8 0V2" />
+      <Line x1={12} y1={16} x2={12} y2={22} />
+      <Line x1={9} y1={19} x2={15} y2={19} />
     </Svg>
   );
 }
