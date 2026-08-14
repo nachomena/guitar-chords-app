@@ -20,9 +20,6 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.nachomena.chordapp"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
     "plugins": [
       [
         "@siteed/audio-studio",
