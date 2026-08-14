@@ -221,7 +221,17 @@ export function useScrollEngine({
 
   const handleManualScrollPositionSettled = useCallback(
     (scrollEvent: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const wasManuallyDragging = isManuallyDraggingRef.current;
       isManuallyDraggingRef.current = false;
+      // onScrollEndDrag/onMomentumScrollEnd can also fire after the engine's own
+      // programmatic scrollTo() calls during autoplay (observed on some platforms
+      // even with animated:false), not just after a real finger drag. Re-anchoring
+      // the playhead from that event's contentOffset when no real drag preceded it
+      // quietly knocks the playhead backwards each time it happens (the reported
+      // offset lags the position we just set it to), which compounds over a few
+      // minutes of playback into the auto-scroll timer running measurably behind
+      // real elapsed time. Only trust this event when a real drag actually started it.
+      if (!wasManuallyDragging) return;
       const { contentOffset, contentSize, layoutMeasurement } = scrollEvent.nativeEvent;
       const maximumScrollOffset = Math.max(0, contentSize.height - layoutMeasurement.height);
       const pixelFraction = maximumScrollOffset > 0 ? contentOffset.y / maximumScrollOffset : 0;
