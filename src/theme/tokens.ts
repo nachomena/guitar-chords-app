@@ -36,6 +36,7 @@ export const accentColorRamp = {
 } as const;
 
 export const baseAccentColor = '#9184d9';
+export const baseDestructiveColor = '#f87171';
 
 export type ColorRamp = Record<100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900, string>;
 
@@ -47,8 +48,33 @@ export type ColorPalette = {
   divider: string;
   accent: string;
   accentMuted: string;
+  /** Destructive actions (e.g. "Delete" in a menu) — fixed across both themes, like `accent`. */
+  destructive: string;
   neutral: ColorRamp;
   accentRamp: ColorRamp;
+  /**
+   * A handful of surfaces (the chord-diagram popover sheet, the song editor's live
+   * preview box, dropdown menus) are deliberately styled as a fixed dark "elevated"
+   * card regardless of the app's light/dark theme — matching the Nocturne design
+   * source, which only ever defined a dark ground. Their own foreground colors must
+   * come from here, never from `text`/`textMuted`/`divider` above: those flip to dark
+   * content in light mode, which would go near-invisible against a surface that
+   * never stops being dark.
+   */
+  elevatedSurface: string;
+  elevatedSurfaceBorder: string;
+  elevatedSurfaceText: string;
+  elevatedSurfaceTextMuted: string;
+  elevatedSurfaceDivider: string;
+};
+
+// Same in both palettes on purpose — see the ColorPalette.elevatedSurface* doc above.
+const elevatedSurfaceColors = {
+  elevatedSurface: neutralColorRamp[800],
+  elevatedSurfaceBorder: neutralColorRamp[700],
+  elevatedSurfaceText: '#e9e9ed',
+  elevatedSurfaceTextMuted: neutralColorRamp[400],
+  elevatedSurfaceDivider: 'rgba(233, 233, 237, 0.16)',
 };
 
 export const darkColorPalette: ColorPalette = {
@@ -59,8 +85,10 @@ export const darkColorPalette: ColorPalette = {
   divider: 'rgba(233, 233, 237, 0.16)',
   accent: baseAccentColor,
   accentMuted: accentColorRamp[300],
+  destructive: baseDestructiveColor,
   neutral: neutralColorRamp,
   accentRamp: accentColorRamp,
+  ...elevatedSurfaceColors,
 };
 
 export const lightColorPalette: ColorPalette = {
@@ -71,8 +99,10 @@ export const lightColorPalette: ColorPalette = {
   divider: 'rgba(41, 43, 49, 0.14)',
   accent: accentColorRamp[600],
   accentMuted: accentColorRamp[700],
+  destructive: baseDestructiveColor,
   neutral: neutralColorRamp,
   accentRamp: accentColorRamp,
+  ...elevatedSurfaceColors,
 };
 
 export const spacingScale = {

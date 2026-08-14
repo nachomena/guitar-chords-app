@@ -91,7 +91,7 @@ export function ChordPopover({
           style={[
             styles.sheet,
             {
-              backgroundColor: colorPalette.neutral[800],
+              backgroundColor: colorPalette.elevatedSurface,
               borderTopLeftRadius: cornerRadius.large,
               borderTopRightRadius: cornerRadius.large,
               paddingBottom: spacing.extraLarge,
@@ -102,7 +102,7 @@ export function ChordPopover({
           <Text
             style={[
               styles.chordName,
-              { color: colorPalette.text, fontFamily: fontFamily.headingMedium },
+              { color: colorPalette.elevatedSurfaceText, fontFamily: fontFamily.headingMedium },
             ]}
           >
             {chordSymbol}
@@ -154,7 +154,7 @@ export function ChordPopover({
           ) : (
             <Text
               style={{
-                color: colorPalette.textMuted,
+                color: colorPalette.elevatedSurfaceTextMuted,
                 fontFamily: fontFamily.bodyRegular,
                 paddingVertical: spacing.extraLarge,
               }}

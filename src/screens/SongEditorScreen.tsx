@@ -381,7 +381,7 @@ export function SongEditorScreen({
             <View
               style={[
                 styles.previewBox,
-                { backgroundColor: colorPalette.neutral[800], borderRadius: cornerRadius.medium },
+                { backgroundColor: colorPalette.elevatedSurface, borderRadius: cornerRadius.medium },
               ]}
             >
               <ChordSheetView
@@ -389,11 +389,11 @@ export function SongEditorScreen({
                 lyricFontSizePixels={16 * defaultLyricFontScale}
                 chordFontSizePixels={12 * defaultChordFontScale}
                 colors={{
-                  lyricText: colorPalette.text,
+                  lyricText: colorPalette.elevatedSurfaceText,
                   chordText: colorPalette.accentRamp[300],
-                  mutedText: colorPalette.textMuted,
+                  mutedText: colorPalette.elevatedSurfaceTextMuted,
                   surface: colorPalette.neutral[900],
-                  divider: colorPalette.divider,
+                  divider: colorPalette.elevatedSurfaceDivider,
                 }}
                 onChordPress={openChordPopover}
                 isChordSymbolRecognized={isRecognizedChordSymbol}

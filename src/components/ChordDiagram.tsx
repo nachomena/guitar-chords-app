@@ -61,7 +61,7 @@ export function ChordDiagram({ position }: { position: ChordDiagramPosition }) {
         <Text
           style={[
             styles.baseFretLabel,
-            { color: colorPalette.textMuted, fontFamily: fontFamily.bodyMedium },
+            { color: colorPalette.elevatedSurfaceTextMuted, fontFamily: fontFamily.bodyMedium },
           ]}
         >
           {position.baseFret}fr
@@ -76,7 +76,7 @@ export function ChordDiagram({ position }: { position: ChordDiagramPosition }) {
               x={stringXPosition(stringIndex)}
               y={TOP_MARGIN_FOR_OPEN_MUTED_GLYPHS - 10}
               fontSize={11}
-              fill={colorPalette.textMuted}
+              fill={colorPalette.elevatedSurfaceTextMuted}
               textAnchor="middle"
             >
               {fretValue === -1 ? 'X' : 'O'}
@@ -106,7 +106,7 @@ export function ChordDiagram({ position }: { position: ChordDiagramPosition }) {
               y1={y}
               x2={stringXPosition(NUMBER_OF_STRINGS - 1)}
               y2={y}
-              stroke={isNut ? colorPalette.text : colorPalette.neutral[600]}
+              stroke={isNut ? colorPalette.elevatedSurfaceText : colorPalette.neutral[600]}
               strokeWidth={isNut ? NUT_THICKNESS : 1}
             />
           );

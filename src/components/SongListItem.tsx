@@ -56,8 +56,7 @@ export function SongListItem({
       onPress={onPress}
       style={[
         styles.card,
-        { backgroundColor: colorPalette.surface, borderRadius: cornerRadius.medium, padding: spacing.large },
-        elevationShadow.small,
+        { backgroundColor: colorPalette.surface, borderRadius: cornerRadius.medium, padding: spacing.large, borderWidth: 1, borderColor: colorPalette.divider },
         // The "..." menu below needs to render on top of the *next* card in the
         // list, not just within its own row — bump this row's stacking order
         // (and Android's elevation, which drives sibling paint order there)
@@ -82,7 +81,7 @@ export function SongListItem({
           <Pressable hitSlop={8} onPress={onToggleFavorite} style={styles.iconButton}>
             <FavoriteStarIcon
               isFavorite={song.isFavorite ?? false}
-              color={song.isFavorite ? colorPalette.accent : colorPalette.neutral[400]}
+              color={song.isFavorite ? colorPalette.accent : colorPalette.textMuted}
             />
           </Pressable>
 
@@ -92,7 +91,7 @@ export function SongListItem({
               onPress={() => setIsMenuOpen((open) => !open)}
               style={styles.iconButton}
             >
-              <OverflowMenuIcon color={colorPalette.neutral[300]} />
+              <OverflowMenuIcon color={colorPalette.textMuted} />
             </Pressable>
 
             {isMenuOpen ? (
@@ -100,8 +99,8 @@ export function SongListItem({
                 style={[
                   styles.menu,
                   {
-                    backgroundColor: colorPalette.neutral[800],
-                    borderColor: colorPalette.neutral[700],
+                    backgroundColor: colorPalette.elevatedSurface,
+                    borderColor: colorPalette.elevatedSurfaceBorder,
                     borderRadius: cornerRadius.medium,
                   },
                   elevationShadow.medium,
@@ -114,7 +113,7 @@ export function SongListItem({
                     onEdit();
                   }}
                 >
-                  <Text style={{ color: colorPalette.text, fontSize: 13 }}>Edit</Text>
+                  <Text style={{ color: colorPalette.elevatedSurfaceText, fontSize: 13 }}>Edit</Text>
                 </Pressable>
                 <Pressable
                   style={styles.menuItem}
@@ -123,7 +122,7 @@ export function SongListItem({
                     onDuplicate();
                   }}
                 >
-                  <Text style={{ color: colorPalette.text, fontSize: 13 }}>Duplicate</Text>
+                  <Text style={{ color: colorPalette.elevatedSurfaceText, fontSize: 13 }}>Duplicate</Text>
                 </Pressable>
                 <Pressable
                   style={styles.menuItem}
@@ -132,7 +131,7 @@ export function SongListItem({
                     onDelete();
                   }}
                 >
-                  <Text style={{ color: colorPalette.neutral[300], fontSize: 13 }}>Delete</Text>
+                  <Text style={{ color: colorPalette.destructive, fontSize: 13 }}>Delete</Text>
                 </Pressable>
               </View>
             ) : null}

@@ -71,6 +71,7 @@ function sortSongs(songs: SongRow[], sortOption: LibrarySortOption): SongRow[] {
 export function LibraryScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
+  const { elevationShadow } = useAppTheme();
   const { colorPalette, spacing, fontFamily } = useAppTheme();
 
   const songsQuery = useSongsQuery();
@@ -86,10 +87,10 @@ export function LibraryScreen() {
     const normalizedQuery = searchQuery.trim().toLowerCase();
     const filteredSongs = normalizedQuery
       ? allSongs.filter(
-          (song) =>
-            song.title.toLowerCase().includes(normalizedQuery) ||
-            song.artist.toLowerCase().includes(normalizedQuery),
-        )
+        (song) =>
+          song.title.toLowerCase().includes(normalizedQuery) ||
+          song.artist.toLowerCase().includes(normalizedQuery),
+      )
       : allSongs;
     return sortSongs(filteredSongs, sortOption);
   }, [songsQuery.data, searchQuery, sortOption]);
@@ -118,14 +119,14 @@ export function LibraryScreen() {
             style={styles.headerIconButton}
             onPress={() => navigation.navigate('Tuner')}
           >
-            <TunerIcon color={colorPalette.neutral[300]} />
+            <TunerIcon color={colorPalette.textMuted} />
           </Pressable>
           <Pressable
             hitSlop={8}
             style={styles.headerIconButton}
             onPress={() => navigation.navigate('Settings')}
           >
-            <SettingsIcon color={colorPalette.neutral[300]} />
+            <SettingsIcon color={colorPalette.textMuted} />
           </Pressable>
         </View>
       </View>
@@ -204,7 +205,7 @@ export function LibraryScreen() {
 
       <Pressable
         onPress={() => navigation.navigate('SongEditor', {})}
-        style={[styles.floatingAddButton, { backgroundColor: colorPalette.background, borderColor: colorPalette.accent }]}
+        style={[styles.floatingAddButton, { backgroundColor: colorPalette.background, borderColor: colorPalette.accent }, elevationShadow.small,]}
       >
         <PlusIcon color={colorPalette.accent} />
       </Pressable>
