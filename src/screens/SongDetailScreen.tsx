@@ -1,6 +1,6 @@
 // The Song Detail / Performance view (SPEC.md §5.1 item 2) — the core differentiator:
 // renders the chord sheet with tempo-driven auto-scroll (§5.2).
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,14 +24,8 @@ import { useSettingsStore } from '../state/settingsStore';
 import { darkColorPalette, lightColorPalette } from '../theme/tokens';
 import { useAppTheme } from '../theme/ThemeProvider';
 
-const ELAPSED_TIME_DISPLAY_POLL_INTERVAL_MILLISECONDS = 500;
-
 const BASE_LYRIC_FONT_SIZE_PIXELS = 16;
 const BASE_CHORD_FONT_SIZE_PIXELS = 12;
-const MINIMUM_FONT_SCALE = 0.8;
-const MAXIMUM_LYRIC_FONT_SCALE = 1.6;
-const MAXIMUM_CHORD_FONT_SCALE = 1.8;
-const FONT_SCALE_STEP = 0.1;
 
 function BackChevronIcon({ color }: { color: string }) {
   return (
@@ -82,8 +76,6 @@ export function SongDetailScreen({
   const followModeDetectionSetting = useSettingsStore((state) => state.followModeDetectionSetting);
 
   const [isPerformanceDarkMode, setIsPerformanceDarkMode] = useState(true);
-  const [lyricFontScale, setLyricFontScale] = useState(defaultLyricFontScale);
-  const [chordFontScale, setChordFontScale] = useState(defaultChordFontScale);
   const { selectedChordSymbol, openChordPopover, closeChordPopover } = useChordPopover();
 
   const parsedSong = useMemo(() => parseChordProSongText(song?.chordSheet ?? ''), [song?.chordSheet]);
@@ -111,25 +103,8 @@ export function SongDetailScreen({
     lineTimeWeights,
   });
 
-  // Elapsed time lives in a plain ref updated by useScrollEngine's own tick
-  // interval — polling it into React state at a slower, fixed interval gives the
-  // transport bar a readable "elapsed / total" readout without re-rendering on
-  // every tick. This exists so playback progress is visible even when the scroll
-  // movement itself is too subtle to notice (a long duration spread over a short
-  // chart moves only a few pixels a second).
-  const [elapsedSecondsForDisplay, setElapsedSecondsForDisplay] = useState(0);
-  useEffect(() => {
-    const pollIntervalId = setInterval(() => {
-      setElapsedSecondsForDisplay(scrollEngine.elapsedMillisecondsRef.current / 1000);
-    }, ELAPSED_TIME_DISPLAY_POLL_INTERVAL_MILLISECONDS);
-    return () => clearInterval(pollIntervalId);
-  }, [scrollEngine.elapsedMillisecondsRef]);
-
   useEffect(() => {
     scrollEngine.resetPlaybackToStart();
-    setElapsedSecondsForDisplay(0);
-    setLyricFontScale(defaultLyricFontScale);
-    setChordFontScale(defaultChordFontScale);
     // Only reset when the song identity changes, not on every scrollEngine re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [songId]);
@@ -141,31 +116,11 @@ export function SongDetailScreen({
     onAutoResumeRequested: scrollEngine.play,
   });
 
-  const handleIncreaseLyricFontScale = useCallback(
-    () => setLyricFontScale((scale) => Math.min(MAXIMUM_LYRIC_FONT_SCALE, Math.round((scale + FONT_SCALE_STEP) * 100) / 100)),
-    [],
-  );
-  const handleDecreaseLyricFontScale = useCallback(
-    () => setLyricFontScale((scale) => Math.max(MINIMUM_FONT_SCALE, Math.round((scale - FONT_SCALE_STEP) * 100) / 100)),
-    [],
-  );
-  const handleIncreaseChordFontScale = useCallback(
-    () => setChordFontScale((scale) => Math.min(MAXIMUM_CHORD_FONT_SCALE, Math.round((scale + FONT_SCALE_STEP) * 100) / 100)),
-    [],
-  );
-  const handleDecreaseChordFontScale = useCallback(
-    () => setChordFontScale((scale) => Math.max(MINIMUM_FONT_SCALE, Math.round((scale - FONT_SCALE_STEP) * 100) / 100)),
-    [],
-  );
-
   if (!song) {
     return <View style={{ flex: 1, backgroundColor: darkColorPalette.background }} />;
   }
 
   const performanceColors = isPerformanceDarkMode ? darkColorPalette : lightColorPalette;
-  const totalSecondsForDisplay = scrollTimeSourceSelection.isAvailable
-    ? scrollTimeSourceSelection.totalDurationMilliseconds / 1000
-    : null;
 
   return (
     <View style={[styles.container, { backgroundColor: performanceColors.background, paddingTop: insets.top }]}>
@@ -224,8 +179,8 @@ export function SongDetailScreen({
       >
         <ChordSheetView
           renderableLines={renderableLines}
-          lyricFontSizePixels={BASE_LYRIC_FONT_SIZE_PIXELS * lyricFontScale}
-          chordFontSizePixels={BASE_CHORD_FONT_SIZE_PIXELS * chordFontScale}
+          lyricFontSizePixels={BASE_LYRIC_FONT_SIZE_PIXELS * defaultLyricFontScale}
+          chordFontSizePixels={BASE_CHORD_FONT_SIZE_PIXELS * defaultChordFontScale}
           colors={{
             lyricText: performanceColors.text,
             chordText: performanceColors.accent,
@@ -243,21 +198,9 @@ export function SongDetailScreen({
         isPlaying={scrollEngine.isPlaying}
         isAutoScrollAvailable={scrollEngine.isAutoScrollAvailable}
         onTogglePlayPause={scrollEngine.togglePlayPause}
-        elapsedSeconds={elapsedSecondsForDisplay}
-        totalSeconds={totalSecondsForDisplay}
-        isFollowModeEnabled={followMode.isFollowModeEnabled}
-        followModeStatus={followMode.followModeStatus}
-        onToggleFollowMode={followMode.toggleFollowMode}
-        lyricFontScale={lyricFontScale}
-        chordFontScale={chordFontScale}
-        onIncreaseLyricFontScale={handleIncreaseLyricFontScale}
-        onDecreaseLyricFontScale={handleDecreaseLyricFontScale}
-        onIncreaseChordFontScale={handleIncreaseChordFontScale}
-        onDecreaseChordFontScale={handleDecreaseChordFontScale}
-        foregroundColor={performanceColors.text}
-        mutedColor={performanceColors.textMuted}
         surfaceColor={performanceColors.surface}
         accentColor={performanceColors.accent}
+        bottomOffset={insets.bottom + 20}
       />
 
       <ChordPopover chordSymbol={selectedChordSymbol} onRequestClose={closeChordPopover} />
