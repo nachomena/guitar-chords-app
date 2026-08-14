@@ -48,19 +48,7 @@ export function useRealAudioStudioPitchDetector(): PitchDetector {
 
   const handleAudioStreamEvent = useCallback(
     async (event: AudioDataEvent) => {
-      // TEMPORARY diagnostic logging while verifying real-device capture — remove
-      // once the pipeline is confirmed working (see the conversation this was added
-      // in for context).
-      console.log('[Tuner] onAudioStream event', {
-        dataType: event.data?.constructor?.name,
-        dataLength: (event.data as ArrayLike<number> | undefined)?.length,
-        streamFormat: event.streamFormat,
-      });
-
-      if (!(event.data instanceof Float32Array)) {
-        console.log('[Tuner] event.data is not a Float32Array, skipping');
-        return;
-      }
+      if (!(event.data instanceof Float32Array)) return;
 
       analysisWindowRef.current = appendSamplesToSlidingAnalysisWindow(
         analysisWindowRef.current,
@@ -73,17 +61,10 @@ export function useRealAudioStudioPitchDetector(): PitchDetector {
         GUITAR_STRING_PITCH_DETECTION_ANALYSIS_WINDOW_SAMPLE_COUNT
       ) {
         // Still filling the window for the first time after startListening().
-        console.log(
-          '[Tuner] filling analysis window',
-          analysisWindowRef.current.length,
-          '/',
-          GUITAR_STRING_PITCH_DETECTION_ANALYSIS_WINDOW_SAMPLE_COUNT,
-        );
         return;
       }
 
       const estimatedFrequencyHz = detectGuitarStringPitch(analysisWindowRef.current);
-      console.log('[Tuner] estimatedFrequencyHz', estimatedFrequencyHz);
       sampleListenerRef.current?.({
         // Onset detection (vs. a sustained note still ringing) isn't needed for the
         // Tuner's continuous-tracking mode — Follow Mode will need real onset logic
@@ -107,19 +88,13 @@ export function useRealAudioStudioPitchDetector(): PitchDetector {
       startListening: async (onSample) => {
         sampleListenerRef.current = onSample;
         analysisWindowRef.current = new Float32Array(0);
-        try {
-          const startResult = await audioRecorderRef.current.startRecording({
-            sampleRate: RECORDING_SAMPLE_RATE_HERTZ,
-            channels: 1,
-            encoding: 'pcm_32bit',
-            streamFormat: 'float32',
-            onAudioStream: handleAudioStreamEvent,
-          });
-          console.log('[Tuner] startRecording resolved', startResult);
-        } catch (error) {
-          console.log('[Tuner] startRecording threw', error);
-          throw error;
-        }
+        await audioRecorderRef.current.startRecording({
+          sampleRate: RECORDING_SAMPLE_RATE_HERTZ,
+          channels: 1,
+          encoding: 'pcm_32bit',
+          streamFormat: 'float32',
+          onAudioStream: handleAudioStreamEvent,
+        });
       },
       stopListening: async () => {
         sampleListenerRef.current = null;

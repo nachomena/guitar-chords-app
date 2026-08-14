@@ -18,6 +18,7 @@ const IN_TUNE_TOLERANCE_CENTS = 5;
 // keeps gliding continuously (GuitarTuna-style) instead of visibly pausing between
 // updates, long enough to actually smooth out the motion rather than snapping.
 const NEEDLE_ANIMATION_DURATION_MILLISECONDS = 150;
+const PULSE_RING_DURATION_MILLISECONDS = 1200;
 
 function BackChevronIcon({ color }: { color: string }) {
   return (
@@ -33,7 +34,7 @@ export function TunerScreen({ navigation }: NativeStackScreenProps<RootStackPara
   const tuner = useTuner();
 
   const isInTune = Math.abs(tuner.centsOffset) <= IN_TUNE_TOLERANCE_CENTS && tuner.detectedFrequencyHz !== null;
-  const noteColor = isInTune ? colorPalette.accent : colorPalette.neutral[400];
+  const noteColor = isInTune ? colorPalette.accent : colorPalette.textMuted;
   const needlePercentage = Math.max(0, Math.min(100, tuner.centsOffset + 50));
 
   const animatedNeedlePercentage = useRef(new Animated.Value(needlePercentage)).current;
@@ -47,6 +48,33 @@ export function TunerScreen({ navigation }: NativeStackScreenProps<RootStackPara
       useNativeDriver: false,
     }).start();
   }, [animatedNeedlePercentage, needlePercentage]);
+
+  // A violet ring that expands outward and fades while the string is in tune —
+  // loops for as long as isInTune stays true, resets the instant it goes false.
+  const pulseAnimatedValue = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!isInTune) {
+      pulseAnimatedValue.stopAnimation();
+      pulseAnimatedValue.setValue(0);
+      return undefined;
+    }
+    const pulseLoop = Animated.loop(
+      Animated.timing(pulseAnimatedValue, {
+        toValue: 1,
+        duration: PULSE_RING_DURATION_MILLISECONDS,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+    );
+    pulseLoop.start();
+    return () => pulseLoop.stop();
+  }, [isInTune, pulseAnimatedValue]);
+
+  const pulseRingScale = pulseAnimatedValue.interpolate({ inputRange: [0, 1], outputRange: [1, 1.9] });
+  const pulseRingOpacity = pulseAnimatedValue.interpolate({
+    inputRange: [0, 0.6, 1],
+    outputRange: [0.55, 0.18, 0],
+  });
 
   return (
     <View style={[styles.container, { backgroundColor: colorPalette.background, paddingTop: insets.top }]}>
@@ -68,16 +96,46 @@ export function TunerScreen({ navigation }: NativeStackScreenProps<RootStackPara
           </View>
         ) : null}
 
-        <Text style={[styles.noteName, { color: noteColor, fontFamily: fontFamily.headingMedium }]}>
-          {tuner.activeString.label}
-        </Text>
         <Text style={{ color: colorPalette.textMuted, fontSize: 13 }}>
-          Target {tuner.activeString.targetFrequencyHz.toFixed(2)} Hz
+          Target {Math.round(tuner.activeString.targetFrequencyHz)} Hz
         </Text>
-        <Text style={{ color: colorPalette.textMuted, fontSize: 13 }}>
+
+        <View style={styles.noteCircleContainer}>
+          {isInTune ? (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.pulseRing,
+                {
+                  borderColor: colorPalette.accent,
+                  opacity: pulseRingOpacity,
+                  transform: [{ scale: pulseRingScale }],
+                },
+              ]}
+            />
+          ) : null}
+          <View
+            style={[
+              styles.noteCircle,
+              {
+                borderColor: noteColor,
+                backgroundColor: isInTune ? colorPalette.accentMuted : 'transparent',
+              },
+            ]}
+          >
+            <Text style={[styles.noteName, { color: noteColor, fontFamily: fontFamily.headingMedium }]}>
+              {tuner.activeString.label}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={[styles.playingHz, { color: colorPalette.text, fontFamily: fontFamily.headingMedium }]}>
+          {tuner.detectedFrequencyHz !== null ? `${Math.round(tuner.detectedFrequencyHz)} Hz` : '— Hz'}
+        </Text>
+        <Text style={{ color: noteColor, fontSize: 14, fontWeight: '600' }}>
           {tuner.detectedFrequencyHz !== null
-            ? `Playing ${tuner.detectedFrequencyHz.toFixed(2)} Hz · ${tuner.centsOffset >= 0 ? '+' : ''}${Math.round(tuner.centsOffset)} cents`
-            : 'Playing — Hz'}
+            ? `${tuner.centsOffset >= 0 ? '+' : ''}${Math.round(tuner.centsOffset)} cents`
+            : 'Play a string to tune'}
         </Text>
 
         <View style={styles.gaugeContainer}>
@@ -97,16 +155,16 @@ export function TunerScreen({ navigation }: NativeStackScreenProps<RootStackPara
             />
           </View>
           <View style={styles.gaugeLabelsRow}>
-            <Text style={{ color: colorPalette.neutral[500], fontSize: 10 }}>flat</Text>
-            <Text style={{ color: colorPalette.neutral[500], fontSize: 10 }}>in tune</Text>
-            <Text style={{ color: colorPalette.neutral[500], fontSize: 10 }}>sharp</Text>
+            <Text style={{ color: colorPalette.textMuted, fontSize: 10 }}>flat</Text>
+            <Text style={{ color: colorPalette.textMuted, fontSize: 10 }}>in tune</Text>
+            <Text style={{ color: colorPalette.textMuted, fontSize: 10 }}>sharp</Text>
           </View>
         </View>
 
         <View style={styles.stringPickerRow}>
           {tuner.strings.map((stringDefinition, stringIndex) => {
             const isActiveString = stringIndex === tuner.activeStringIndex;
-            const stringColor = isActiveString ? colorPalette.accent : colorPalette.neutral[400];
+            const stringColor = isActiveString ? colorPalette.accent : colorPalette.textMuted;
             return (
               <Pressable
                 key={`${stringDefinition.noteName}-${stringIndex}`}
@@ -152,7 +210,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 28,
+    gap: 18,
     padding: 20,
   },
   notImplementedBanner: {
@@ -163,11 +221,38 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
   },
+  noteCircleContainer: {
+    width: 180,
+    height: 180,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 176,
+    height: 176,
+    borderRadius: 999,
+    borderWidth: 2,
+  },
+  noteCircle: {
+    width: 176,
+    height: 176,
+    borderRadius: 999,
+    borderWidth: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   noteName: {
-    fontSize: 72,
+    fontSize: 76,
+    lineHeight: 88,
+  },
+  playingHz: {
+    fontSize: 40,
+    lineHeight: 46,
   },
   gaugeContainer: {
-    width: 240,
+    width: 260,
+    marginTop: 8,
   },
   gaugeTrack: {
     position: 'relative',
@@ -197,13 +282,14 @@ const styles = StyleSheet.create({
   },
   stringPickerRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
+    marginTop: 4,
   },
   stringButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    borderWidth: 1,
+    width: 38,
+    height: 38,
+    borderRadius: 999,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
