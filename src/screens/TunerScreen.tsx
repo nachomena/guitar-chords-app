@@ -3,9 +3,9 @@
 // plan) — the manual string picker SPEC.md already calls for as an edge-case
 // fallback is the primary interaction here until a native audio module is built and
 // tested on a physical device.
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Polyline } from 'react-native-svg';
 
@@ -14,6 +14,10 @@ import type { RootStackParamList } from '../navigation/types';
 import { useAppTheme } from '../theme/ThemeProvider';
 
 const IN_TUNE_TOLERANCE_CENTS = 5;
+// Matches roughly how often smoothed readings arrive — short enough that the needle
+// keeps gliding continuously (GuitarTuna-style) instead of visibly pausing between
+// updates, long enough to actually smooth out the motion rather than snapping.
+const NEEDLE_ANIMATION_DURATION_MILLISECONDS = 150;
 
 function BackChevronIcon({ color }: { color: string }) {
   return (
@@ -31,6 +35,18 @@ export function TunerScreen({ navigation }: NativeStackScreenProps<RootStackPara
   const isInTune = Math.abs(tuner.centsOffset) <= IN_TUNE_TOLERANCE_CENTS && tuner.detectedFrequencyHz !== null;
   const noteColor = isInTune ? colorPalette.accent : colorPalette.neutral[400];
   const needlePercentage = Math.max(0, Math.min(100, tuner.centsOffset + 50));
+
+  const animatedNeedlePercentage = useRef(new Animated.Value(needlePercentage)).current;
+  useEffect(() => {
+    Animated.timing(animatedNeedlePercentage, {
+      toValue: needlePercentage,
+      duration: NEEDLE_ANIMATION_DURATION_MILLISECONDS,
+      easing: Easing.out(Easing.ease),
+      // Animating a percentage-based `left` is a layout property, which the native
+      // driver can't handle — this stays JS-driven.
+      useNativeDriver: false,
+    }).start();
+  }, [animatedNeedlePercentage, needlePercentage]);
 
   return (
     <View style={[styles.container, { backgroundColor: colorPalette.background, paddingTop: insets.top }]}>
@@ -56,18 +72,27 @@ export function TunerScreen({ navigation }: NativeStackScreenProps<RootStackPara
           {tuner.activeString.label}
         </Text>
         <Text style={{ color: colorPalette.textMuted, fontSize: 13 }}>
+          Target {tuner.activeString.targetFrequencyHz.toFixed(2)} Hz
+        </Text>
+        <Text style={{ color: colorPalette.textMuted, fontSize: 13 }}>
           {tuner.detectedFrequencyHz !== null
-            ? `${tuner.detectedFrequencyHz.toFixed(2)} Hz · ${tuner.centsOffset >= 0 ? '+' : ''}${Math.round(tuner.centsOffset)} cents`
-            : `Target ${tuner.activeString.targetFrequencyHz.toFixed(2)} Hz`}
+            ? `Playing ${tuner.detectedFrequencyHz.toFixed(2)} Hz · ${tuner.centsOffset >= 0 ? '+' : ''}${Math.round(tuner.centsOffset)} cents`
+            : 'Playing — Hz'}
         </Text>
 
         <View style={styles.gaugeContainer}>
           <View style={[styles.gaugeTrack, { backgroundColor: colorPalette.neutral[800] }]}>
             <View style={[styles.gaugeCenterTick, { backgroundColor: colorPalette.neutral[600] }]} />
-            <View
+            <Animated.View
               style={[
                 styles.gaugeNeedle,
-                { backgroundColor: noteColor, left: `${needlePercentage}%` },
+                {
+                  backgroundColor: noteColor,
+                  left: animatedNeedlePercentage.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
               ]}
             />
           </View>

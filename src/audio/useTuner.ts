@@ -1,28 +1,50 @@
 // The chromatic tuner (SPEC.md §5.6), reusing the same PitchDetector interface as
-// Follow Mode in continuous pitch-tracking mode. With the stub detector, detection
-// never produces a frequency, so the screen falls back to the manual string picker
-// SPEC.md §5.6 already calls for as an edge-case fallback — here it's the primary
-// interaction until real detection is wired up.
-import { useCallback, useEffect, useState } from 'react';
+// Follow Mode in continuous pitch-tracking mode. usePitchDetector() picks the real
+// implementation outside Expo Go and the stub inside it (see usePitchDetector.ts) —
+// with the stub, detection never produces a frequency, so the screen falls back to
+// the manual string picker SPEC.md §5.6 already calls for as an edge-case fallback.
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { stubPitchDetector } from './stubPitchDetector';
-import { computeCentsOffsetFromTargetFrequency, STANDARD_GUITAR_TUNING_STRINGS } from './tuning';
+import { createExponentialMovingAverageFrequencySmoother } from './frequencySmoothing';
+import { usePitchDetector } from './usePitchDetector';
+import {
+  computeCentsOffsetFromTargetFrequency,
+  findNearestStandardTuningStringIndex,
+  STANDARD_GUITAR_TUNING_STRINGS,
+} from './tuning';
 import type { PitchDetectionSample, PitchDetector } from './PitchDetector';
 
-export function useTuner(pitchDetector: PitchDetector = stubPitchDetector) {
+const FREQUENCY_SMOOTHING_FACTOR = 0.3;
+
+export function useTuner(pitchDetectorOverride?: PitchDetector) {
+  const selectedPitchDetector = usePitchDetector();
+  const pitchDetector = pitchDetectorOverride ?? selectedPitchDetector;
   const [activeStringIndex, setActiveStringIndex] = useState(0);
   const [detectedFrequencyHz, setDetectedFrequencyHz] = useState<number | null>(null);
+  const smoothFrequency = useRef(
+    createExponentialMovingAverageFrequencySmoother(FREQUENCY_SMOOTHING_FACTOR),
+  ).current;
 
   useEffect(() => {
     let isMounted = true;
 
     const handlePitchDetectionSample = (sample: PitchDetectionSample) => {
       if (!isMounted) return;
-      setDetectedFrequencyHz(sample.estimatedFrequencyHz);
+      const smoothedFrequencyHz = smoothFrequency(sample.estimatedFrequencyHz);
+      setDetectedFrequencyHz(smoothedFrequencyHz);
+      if (smoothedFrequencyHz !== null) {
+        // Auto string detection (SPEC.md §5.6) — no need to pick a string manually;
+        // whichever string you're actually playing becomes the active one. The
+        // manual picker below still works as the edge-case fallback the spec calls
+        // for, but the next detected sample will override it again if you're
+        // actively playing a different string.
+        setActiveStringIndex(findNearestStandardTuningStringIndex(smoothedFrequencyHz));
+      }
     };
 
     void (async () => {
-      await pitchDetector.requestMicrophonePermission();
+      const isPermissionGranted = await pitchDetector.requestMicrophonePermission();
+      if (!isPermissionGranted || !isMounted) return;
       await pitchDetector.startListening(handlePitchDetectionSample);
     })();
 

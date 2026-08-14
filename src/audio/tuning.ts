@@ -16,3 +16,25 @@ export function computeCentsOffsetFromTargetFrequency(
 ): number {
   return 1200 * Math.log2(detectedFrequencyHz / targetFrequencyHz);
 }
+
+/**
+ * SPEC.md §5.6's auto string detection: no manual picker needed — find whichever of
+ * the 6 standard-tuning notes the detected pitch is closest to (by cents, not raw Hz
+ * difference, so this stays correct across the whole frequency range).
+ */
+export function findNearestStandardTuningStringIndex(detectedFrequencyHz: number): number {
+  let nearestStringIndex = 0;
+  let smallestAbsoluteCentsOffset = Infinity;
+
+  STANDARD_GUITAR_TUNING_STRINGS.forEach((string, stringIndex) => {
+    const absoluteCentsOffset = Math.abs(
+      computeCentsOffsetFromTargetFrequency(detectedFrequencyHz, string.targetFrequencyHz),
+    );
+    if (absoluteCentsOffset < smallestAbsoluteCentsOffset) {
+      smallestAbsoluteCentsOffset = absoluteCentsOffset;
+      nearestStringIndex = stringIndex;
+    }
+  });
+
+  return nearestStringIndex;
+}
