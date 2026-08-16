@@ -66,10 +66,6 @@ export function useRealAudioStudioPitchDetector(): PitchDetector {
 
       const estimatedFrequencyHz = detectGuitarStringPitch(analysisWindowRef.current);
       sampleListenerRef.current?.({
-        // Onset detection (vs. a sustained note still ringing) isn't needed for the
-        // Tuner's continuous-tracking mode — Follow Mode will need real onset logic
-        // here when it's built.
-        isOnsetDetected: false,
         isFundamentalFrequencyPresent: estimatedFrequencyHz !== null,
         estimatedFrequencyHz,
       });

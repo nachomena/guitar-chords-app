@@ -9,7 +9,7 @@ import Svg, { Polyline } from 'react-native-svg';
 import { exportSongLibraryToJsonFile, pickJsonFileAndImportLibrary } from '../db/backup';
 import { SONGS_QUERY_KEY } from '../db/songs';
 import type { RootStackParamList } from '../navigation/types';
-import { useSettingsStore, type AppThemePreference, type FollowModeDetectionSetting } from '../state/settingsStore';
+import { useSettingsStore, type AppThemePreference } from '../state/settingsStore';
 import { useAppTheme } from '../theme/ThemeProvider';
 
 function BackChevronIcon({ color }: { color: string }) {
@@ -98,8 +98,6 @@ export function SettingsScreen({ navigation }: NativeStackScreenProps<RootStackP
   const decreaseDefaultLyricFontScale = useSettingsStore((state) => state.decreaseDefaultLyricFontScale);
   const increaseDefaultChordFontScale = useSettingsStore((state) => state.increaseDefaultChordFontScale);
   const decreaseDefaultChordFontScale = useSettingsStore((state) => state.decreaseDefaultChordFontScale);
-  const followModeDetectionSetting = useSettingsStore((state) => state.followModeDetectionSetting);
-  const setFollowModeDetectionSetting = useSettingsStore((state) => state.setFollowModeDetectionSetting);
 
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -187,19 +185,6 @@ export function SettingsScreen({ navigation }: NativeStackScreenProps<RootStackP
             percentage={Math.round(defaultChordFontScale * 100)}
             onDecrease={decreaseDefaultChordFontScale}
             onIncrease={increaseDefaultChordFontScale}
-            colorPalette={colorPalette}
-          />
-        </View>
-
-        <View>
-          <SectionLabel color={colorPalette.textMuted}>Follow Mode detection</SectionLabel>
-          <SegmentedControl
-            options={[
-              { value: 'precise' as FollowModeDetectionSetting, label: 'Precise' },
-              { value: 'simple' as FollowModeDetectionSetting, label: 'Simple' },
-            ]}
-            selectedValue={followModeDetectionSetting}
-            onSelect={setFollowModeDetectionSetting}
             colorPalette={colorPalette}
           />
         </View>

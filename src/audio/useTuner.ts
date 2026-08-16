@@ -1,5 +1,4 @@
-// The chromatic tuner (SPEC.md §5.6), reusing the same PitchDetector interface as
-// Follow Mode in continuous pitch-tracking mode. usePitchDetector() picks the real
+// The chromatic tuner (SPEC.md §5.6). usePitchDetector() picks the real
 // implementation outside Expo Go and the stub inside it (see usePitchDetector.ts) —
 // with the stub, detection never produces a frequency, so the screen falls back to
 // the manual string picker SPEC.md §5.6 already calls for as an edge-case fallback.

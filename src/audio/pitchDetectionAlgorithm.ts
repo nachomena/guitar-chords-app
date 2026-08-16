@@ -8,9 +8,9 @@
 // buffer size SPEC.md §8.8 suggests as an example (~46ms at 44.1kHz) cannot reliably
 // detect the guitar's low E string at 82.41Hz — that needs a window covering at least
 // a few full periods, i.e. tens of milliseconds more than 46ms provides. The Tuner
-// isn't latency-sensitive the way Follow Mode's onset detection is (nobody needs a
-// tuning needle to react in under 50ms), so the real capture pipeline should
-// accumulate several raw capture buffers into one larger analysis window
+// isn't latency-sensitive (nobody needs a tuning needle to react in under 50ms), so
+// the real capture pipeline should accumulate several raw capture buffers into one
+// larger analysis window
 // (GUITAR_STRING_PITCH_DETECTION_ANALYSIS_WINDOW_SAMPLE_COUNT below) before running
 // this function, rather than running it on each raw buffer directly.
 import Pitchfinder from 'pitchfinder';

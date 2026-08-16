@@ -1,12 +1,10 @@
 import type { PitchDetectionSampleListener, PitchDetector } from './PitchDetector';
 
 /**
- * Stands in for the real on-device pitch-detection pipeline (SPEC.md §8.8) until a
- * native streaming-audio module is built and tested on a physical device (this
- * environment has no simulator/device to verify one against — see the
- * implementation plan). Deliberately never reports an onset or a frequency, rather
- * than fabricating fake detections that would make Follow Mode/the Tuner appear to
- * work when they don't.
+ * Stands in for the real on-device pitch-detection pipeline (useRealAudioStudioPitchDetector.ts)
+ * while running inside Expo Go, which can't load that native module — see
+ * usePitchDetector.ts. Deliberately never reports a frequency, rather than
+ * fabricating fake detections that would make the Tuner appear to work when it doesn't.
  */
 class StubPitchDetector implements PitchDetector {
   readonly isImplemented = false;

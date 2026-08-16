@@ -7,7 +7,6 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 export type AppThemePreference = 'light' | 'dark' | 'system';
-export type FollowModeDetectionSetting = 'precise' | 'simple';
 
 const MINIMUM_FONT_SCALE = 0.8;
 const MAXIMUM_LYRIC_FONT_SCALE = 1.6;
@@ -22,15 +21,11 @@ type SettingsState = {
   themePreference: AppThemePreference;
   defaultLyricFontScale: number;
   defaultChordFontScale: number;
-  followModeDetectionSetting: FollowModeDetectionSetting;
   setThemePreference: (themePreference: AppThemePreference) => void;
   increaseDefaultLyricFontScale: () => void;
   decreaseDefaultLyricFontScale: () => void;
   increaseDefaultChordFontScale: () => void;
   decreaseDefaultChordFontScale: () => void;
-  setFollowModeDetectionSetting: (
-    followModeDetectionSetting: FollowModeDetectionSetting,
-  ) => void;
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -39,7 +34,6 @@ export const useSettingsStore = create<SettingsState>()(
       themePreference: 'system',
       defaultLyricFontScale: 1,
       defaultChordFontScale: 1,
-      followModeDetectionSetting: 'precise',
 
       setThemePreference: (themePreference) => set({ themePreference }),
 
@@ -75,9 +69,6 @@ export const useSettingsStore = create<SettingsState>()(
             MAXIMUM_CHORD_FONT_SCALE,
           ),
         })),
-
-      setFollowModeDetectionSetting: (followModeDetectionSetting) =>
-        set({ followModeDetectionSetting }),
     }),
     {
       name: 'chord-app-settings',
