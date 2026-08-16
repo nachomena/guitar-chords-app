@@ -4,10 +4,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path, Polyline } from 'react-native-svg';
+import Svg, { Circle, Path, Polyline, Rect } from 'react-native-svg';
 
 import { ChordPopover, useChordPopover } from '../components/ChordPopover';
 import { ChordSheetView } from '../components/ChordSheetView';
+import { SongQrModal } from '../components/SongQrModal';
 import { TransportBar } from '../components/TransportBar';
 import {
   computeLineTimeWeights,
@@ -15,7 +16,6 @@ import {
   groupParsedLinesForRendering,
 } from '../chordpro/rendering';
 import { parseChordProSongText } from '../chordpro/parser';
-import { useFollowMode } from '../audio/useFollowMode';
 import { selectScrollTimeSourceForSong } from '../scroll-engine/selectScrollTimeSource';
 import { useScrollEngine } from '../scroll-engine/useScrollEngine';
 import { useSongQuery } from '../db/songs';
@@ -60,6 +60,20 @@ function LightModeIcon({ color }: { color: string }) {
   );
 }
 
+function QrCodeIcon({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x={3} y={3} width={7} height={7} />
+      <Rect x={14} y={3} width={7} height={7} />
+      <Rect x={3} y={14} width={7} height={7} />
+      <Rect x={14} y={14} width={3} height={3} fill={color} stroke="none" />
+      <Rect x={18} y={14} width={3} height={3} fill={color} stroke="none" />
+      <Rect x={14} y={18} width={3} height={3} fill={color} stroke="none" />
+      <Rect x={18} y={18} width={3} height={3} fill={color} stroke="none" />
+    </Svg>
+  );
+}
+
 export function SongDetailScreen({
   route,
   navigation,
@@ -73,9 +87,9 @@ export function SongDetailScreen({
 
   const defaultLyricFontScale = useSettingsStore((state) => state.defaultLyricFontScale);
   const defaultChordFontScale = useSettingsStore((state) => state.defaultChordFontScale);
-  const followModeDetectionSetting = useSettingsStore((state) => state.followModeDetectionSetting);
 
   const [isPerformanceDarkMode, setIsPerformanceDarkMode] = useState(true);
+  const [isQrModalVisible, setIsQrModalVisible] = useState(false);
   const { selectedChordSymbol, openChordPopover, closeChordPopover } = useChordPopover();
 
   const parsedSong = useMemo(() => parseChordProSongText(song?.chordSheet ?? ''), [song?.chordSheet]);
@@ -108,13 +122,6 @@ export function SongDetailScreen({
     // Only reset when the song identity changes, not on every scrollEngine re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [songId]);
-
-  const followMode = useFollowMode({
-    beatsPerMinute: song?.bpm ?? null,
-    followModeDetectionSetting,
-    onAutoPauseRequested: scrollEngine.pause,
-    onAutoResumeRequested: scrollEngine.play,
-  });
 
   if (!song) {
     return <View style={{ flex: 1, backgroundColor: darkColorPalette.background }} />;
@@ -153,6 +160,15 @@ export function SongDetailScreen({
           style={styles.headerIconButton}
         >
           <EditPencilIcon color={performanceColors.accent} />
+        </Pressable>
+        <Pressable
+          hitSlop={8}
+          onPress={() => setIsQrModalVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Ver código QR"
+          style={styles.headerIconButton}
+        >
+          <QrCodeIcon color={performanceColors.accent} />
         </Pressable>
         <Pressable
           hitSlop={8}
@@ -204,6 +220,12 @@ export function SongDetailScreen({
       />
 
       <ChordPopover chordSymbol={selectedChordSymbol} onRequestClose={closeChordPopover} />
+      <SongQrModal
+        visible={isQrModalVisible}
+        title={song.title}
+        artist={song.artist}
+        onRequestClose={() => setIsQrModalVisible(false)}
+      />
     </View>
   );
 }
