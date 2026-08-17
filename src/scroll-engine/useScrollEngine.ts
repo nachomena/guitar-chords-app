@@ -30,6 +30,7 @@
 // paused, dragging behaves the same as any plain ScrollView — free scrolling, with
 // the playhead re-anchored so a later play() resumes from that position.
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import {
   ScrollView,
   type LayoutChangeEvent,
@@ -44,6 +45,10 @@ import {
 } from './scrollPacing';
 
 const SCROLL_TICK_INTERVAL_MILLISECONDS = 50;
+// Tag-scoped, so this doesn't fight any other keep-awake use elsewhere in the app —
+// only ever active while auto-scroll is actually playing, not just while the
+// Performance view is open.
+const AUTO_SCROLL_KEEP_AWAKE_TAG = 'chord-app-auto-scroll';
 
 export type UseScrollEngineParameters = {
   /** null when the song has neither a duration nor a bpm set (§5.2: auto-scroll unavailable). */
@@ -177,6 +182,21 @@ export function useScrollEngine({
 
   // Stop the interval if the component unmounts mid-playback.
   useEffect(() => stopTicking, [stopTicking]);
+
+  // Keep the screen on for as long as auto-scroll is actively playing — nobody
+  // wants the screen to lock mid-song and lose their place. Released the instant
+  // playback stops (pause, reaching the end, or unmount), not just when the
+  // Performance view closes.
+  useEffect(() => {
+    if (isPlaying) {
+      void activateKeepAwakeAsync(AUTO_SCROLL_KEEP_AWAKE_TAG);
+    } else {
+      void deactivateKeepAwake(AUTO_SCROLL_KEEP_AWAKE_TAG);
+    }
+    return () => {
+      void deactivateKeepAwake(AUTO_SCROLL_KEEP_AWAKE_TAG);
+    };
+  }, [isPlaying]);
 
   const play = useCallback(() => {
     if (!isAutoScrollAvailable) return;
