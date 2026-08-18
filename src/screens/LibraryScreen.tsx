@@ -1,12 +1,13 @@
 // The Library / Home screen (SPEC.md §5.1 item 1).
-import React, { useMemo, useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 
 import { SongListItem } from '../components/SongListItem';
+import { SongOptionsMenu, type SongOptionsMenuAnchor } from '../components/SongOptionsMenu';
 import {
   useDeleteSongMutation,
   useDuplicateSongMutation,
@@ -80,7 +81,23 @@ export function LibraryScreen() {
   const duplicateSongMutation = useDuplicateSongMutation();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortOption, setSortOption] = useState<LibrarySortOption>('title');
+  const [sortOption, setSortOption] = useState<LibrarySortOption>('recentlyAdded');
+  const [openMenuSongId, setOpenMenuSongId] = useState<string | null>(null);
+  const [menuAnchor, setMenuAnchor] = useState<SongOptionsMenuAnchor | null>(null);
+
+  const closeMenu = useCallback(() => {
+    setOpenMenuSongId(null);
+    setMenuAnchor(null);
+  }, []);
+
+  // Close any open "..." menu the instant this screen loses focus (e.g. navigating
+  // to a song's detail view) — without this, the menu was still open when coming
+  // back, since LibraryScreen stays mounted underneath the pushed screen.
+  useFocusEffect(
+    useCallback(() => {
+      return () => closeMenu();
+    }, [closeMenu]),
+  );
 
   const filteredAndSortedSongs = useMemo(() => {
     const allSongs = songsQuery.data ?? [];
@@ -189,9 +206,10 @@ export function LibraryScreen() {
             onToggleFavorite={() =>
               setSongFavoriteMutation.mutate({ songId: song.id, isFavorite: !song.isFavorite })
             }
-            onEdit={() => navigation.navigate('SongEditor', { songId: song.id })}
-            onDuplicate={() => duplicateSongMutation.mutate(song)}
-            onDelete={() => handleDeleteSong(song)}
+            onOpenMenu={(anchor) => {
+              setOpenMenuSongId(song.id);
+              setMenuAnchor(anchor);
+            }}
           />
         )}
         ListEmptyComponent={
@@ -201,6 +219,22 @@ export function LibraryScreen() {
             </Text>
           ) : null
         }
+      />
+
+      <SongOptionsMenu
+        anchor={menuAnchor}
+        onEdit={() => {
+          if (openMenuSongId) navigation.navigate('SongEditor', { songId: openMenuSongId });
+        }}
+        onDuplicate={() => {
+          const openMenuSong = filteredAndSortedSongs.find((song) => song.id === openMenuSongId);
+          if (openMenuSong) duplicateSongMutation.mutate(openMenuSong);
+        }}
+        onDelete={() => {
+          const openMenuSong = filteredAndSortedSongs.find((song) => song.id === openMenuSongId);
+          if (openMenuSong) handleDeleteSong(openMenuSong);
+        }}
+        onRequestClose={closeMenu}
       />
 
       <Pressable

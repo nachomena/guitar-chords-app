@@ -1,12 +1,12 @@
 // A single row in the Library list (SPEC.md §5.1 item 1): title + artist, a
-// favorite star, and a "..." menu for Edit/Duplicate/Delete (in lieu of swipe/
-// long-press gestures, which need a gesture-handler-driven swipeable row — a
-// tappable menu covers the same actions with less gesture-conflict risk against
-// the list's own scrolling).
-import React, { useState } from 'react';
+// favorite star, and a "..." button that opens the shared SongOptionsMenu (Edit/
+// Duplicate/Delete) — in lieu of swipe/long-press gestures, which need a
+// gesture-handler-driven swipeable row.
+import React, { useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Polygon } from 'react-native-svg';
 
+import type { SongOptionsMenuAnchor } from './SongOptionsMenu';
 import type { SongRow } from '../db/schema';
 import { useAppTheme } from '../theme/ThemeProvider';
 
@@ -37,31 +37,37 @@ export function SongListItem({
   song,
   onPress,
   onToggleFavorite,
-  onEdit,
-  onDuplicate,
-  onDelete,
+  onOpenMenu,
 }: {
   song: SongRow;
   onPress: () => void;
   onToggleFavorite: () => void;
-  onEdit: () => void;
-  onDuplicate: () => void;
-  onDelete: () => void;
+  /** The actual Edit/Duplicate/Delete menu is a single shared Modal owned by
+   * LibraryScreen (SongOptionsMenu) — this just reports where its "..." button
+   * landed on screen so that menu can anchor itself there. */
+  onOpenMenu: (anchor: SongOptionsMenuAnchor) => void;
 }) {
-  const { colorPalette, spacing, cornerRadius, fontFamily, elevationShadow } = useAppTheme();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { colorPalette, spacing, cornerRadius, fontFamily } = useAppTheme();
+  const menuButtonRef = useRef<View>(null);
+
+  const handleOpenMenu = () => {
+    menuButtonRef.current?.measureInWindow((x, y, width, height) => {
+      onOpenMenu({ x, y, width, height });
+    });
+  };
 
   return (
     <Pressable
       onPress={onPress}
       style={[
         styles.card,
-        { backgroundColor: colorPalette.surface, borderRadius: cornerRadius.medium, padding: spacing.large, borderWidth: 1, borderColor: colorPalette.divider },
-        // The "..." menu below needs to render on top of the *next* card in the
-        // list, not just within its own row — bump this row's stacking order
-        // (and Android's elevation, which drives sibling paint order there)
-        // above every other row's while its menu is open.
-        isMenuOpen && styles.cardWithMenuOpen,
+        {
+          backgroundColor: colorPalette.surface,
+          borderRadius: cornerRadius.medium,
+          padding: spacing.large,
+          borderWidth: 1,
+          borderColor: colorPalette.divider,
+        },
       ]}
     >
       <View style={styles.row}>
@@ -85,57 +91,9 @@ export function SongListItem({
             />
           </Pressable>
 
-          <View>
-            <Pressable
-              hitSlop={8}
-              onPress={() => setIsMenuOpen((open) => !open)}
-              style={styles.iconButton}
-            >
-              <OverflowMenuIcon color={colorPalette.textMuted} />
-            </Pressable>
-
-            {isMenuOpen ? (
-              <View
-                style={[
-                  styles.menu,
-                  {
-                    backgroundColor: colorPalette.elevatedSurface,
-                    borderColor: colorPalette.elevatedSurfaceBorder,
-                    borderRadius: cornerRadius.medium,
-                  },
-                  elevationShadow.medium,
-                ]}
-              >
-                <Pressable
-                  style={styles.menuItem}
-                  onPress={() => {
-                    setIsMenuOpen(false);
-                    onEdit();
-                  }}
-                >
-                  <Text style={{ color: colorPalette.elevatedSurfaceText, fontSize: 13 }}>Edit</Text>
-                </Pressable>
-                <Pressable
-                  style={styles.menuItem}
-                  onPress={() => {
-                    setIsMenuOpen(false);
-                    onDuplicate();
-                  }}
-                >
-                  <Text style={{ color: colorPalette.elevatedSurfaceText, fontSize: 13 }}>Duplicate</Text>
-                </Pressable>
-                <Pressable
-                  style={styles.menuItem}
-                  onPress={() => {
-                    setIsMenuOpen(false);
-                    onDelete();
-                  }}
-                >
-                  <Text style={{ color: colorPalette.destructive, fontSize: 13 }}>Delete</Text>
-                </Pressable>
-              </View>
-            ) : null}
-          </View>
+          <Pressable ref={menuButtonRef} hitSlop={8} onPress={handleOpenMenu} style={styles.iconButton}>
+            <OverflowMenuIcon color={colorPalette.textMuted} />
+          </Pressable>
         </View>
       </View>
     </Pressable>
@@ -145,10 +103,6 @@ export function SongListItem({
 const styles = StyleSheet.create({
   card: {
     marginBottom: 10,
-  },
-  cardWithMenuOpen: {
-    zIndex: 50,
-    elevation: 24,
   },
   row: {
     flexDirection: 'row',
@@ -179,19 +133,5 @@ const styles = StyleSheet.create({
     height: 30,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  menu: {
-    position: 'absolute',
-    right: 0,
-    top: 32,
-    zIndex: 10,
-    minWidth: 130,
-    borderWidth: 1,
-    padding: 4,
-    gap: 1,
-  },
-  menuItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
   },
 });
