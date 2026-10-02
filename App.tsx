@@ -5,7 +5,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -13,8 +12,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/inter';
 
-import { database } from './src/db/client';
-import migrations from './src/db/migrations/migrations';
+import { useDatabaseMigrations } from './src/db/useDatabaseMigrations';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { AppThemeProvider, useAppTheme } from './src/theme/ThemeProvider';
 
@@ -38,10 +36,7 @@ export default function App() {
     Inter_500Medium,
     Inter_700Bold,
   });
-  const { success: didMigrationsSucceed, error: migrationError } = useMigrations(
-    database,
-    migrations,
-  );
+  const { success: didMigrationsSucceed, error: migrationError } = useDatabaseMigrations();
 
   const isAppReady = (areFontsLoaded || fontLoadError !== null) && didMigrationsSucceed;
 

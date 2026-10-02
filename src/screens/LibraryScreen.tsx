@@ -2,7 +2,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 
@@ -17,6 +17,7 @@ import {
 import type { SongRow } from '../db/schema';
 import type { RootStackParamList } from '../navigation/types';
 import { useAppTheme } from '../theme/ThemeProvider';
+import { showAlert } from '../utils/showAlert';
 
 type LibrarySortOption = 'title' | 'artist' | 'recentlyAdded';
 
@@ -115,7 +116,7 @@ export function LibraryScreen() {
   const songCountLabel = `${songsQuery.data?.length ?? 0} song${(songsQuery.data?.length ?? 0) === 1 ? '' : 's'}`;
 
   const handleDeleteSong = (song: SongRow) => {
-    Alert.alert('Delete song', `Delete "${song.title}"? This can't be undone.`, [
+    showAlert('Delete song', `Delete "${song.title}"? This can't be undone.`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => deleteSongMutation.mutate(song.id) },
     ]);
