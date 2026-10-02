@@ -1,0 +1,6 @@
+dist/
+.expo/
+package-lock.json
+SPEC.md
+docs/SPEC.md
+.claude/

@@ -49,7 +49,7 @@ export function useTuner(pitchDetectorOverride?: PitchDetector) {
       isMounted = false;
       void pitchDetector.stopListening();
     };
-  }, [pitchDetector]);
+  }, [pitchDetector, smoothFrequency]);
 
   const selectString = useCallback((stringIndex: number) => {
     setActiveStringIndex(stringIndex);
