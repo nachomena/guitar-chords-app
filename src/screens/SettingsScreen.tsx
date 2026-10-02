@@ -1,11 +1,12 @@
 // The Settings screen (SPEC.md §5.1 item 4).
 import React, { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import Svg, { Polyline } from 'react-native-svg';
 
+import { LibrarySyncSection } from '../components/LibrarySyncSection';
 import { exportSongLibraryToJsonFile, pickJsonFileAndImportLibrary } from '../db/backup';
 import { SONGS_QUERY_KEY } from '../db/songs';
 import type { RootStackParamList } from '../navigation/types';
@@ -155,7 +156,7 @@ export function SettingsScreen({ navigation }: NativeStackScreenProps<RootStackP
         </Text>
       </View>
 
-      <View style={styles.sectionsContainer}>
+      <ScrollView contentContainerStyle={styles.sectionsContainer} keyboardShouldPersistTaps="handled">
         <View>
           <SectionLabel color={colorPalette.textMuted}>Theme</SectionLabel>
           <SegmentedControl
@@ -201,6 +202,11 @@ export function SettingsScreen({ navigation }: NativeStackScreenProps<RootStackP
         </View>
 
         <View>
+          <SectionLabel color={colorPalette.textMuted}>Sync across devices</SectionLabel>
+          <LibrarySyncSection />
+        </View>
+
+        <View>
           <SectionLabel color={colorPalette.textMuted}>Backup</SectionLabel>
           <View style={{ gap: 8 }}>
             <Pressable
@@ -225,9 +231,9 @@ export function SettingsScreen({ navigation }: NativeStackScreenProps<RootStackP
         </View>
 
         <View style={[styles.aboutSection, { borderTopColor: colorPalette.neutral[800] }]}>
-          <Text style={{ color: colorPalette.textMuted, fontSize: 11 }}>Chord App — v1.0.0 (local-only)</Text>
+          <Text style={{ color: colorPalette.textMuted, fontSize: 11 }}>Chord App — v1.0.0</Text>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }

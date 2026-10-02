@@ -11,6 +11,8 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 
+import { requestLibrarySync } from '../sync/syncEngine';
+import { recordSongDeletions } from '../sync/syncStore';
 import type { SongRow } from './schema';
 import { songStorage } from './songStorage';
 
@@ -68,6 +70,7 @@ export async function createSong(songInputFields: SongInputFields): Promise<Song
     updatedAt: timestamp,
   };
   await songStorage.insertSongRows([newRow]);
+  requestLibrarySync();
   return newRow;
 }
 
@@ -79,10 +82,13 @@ export async function updateSong(
     ...songInputFieldsToRow(songInputFields),
     updatedAt: currentTimestampAsIsoString(),
   });
+  requestLibrarySync();
 }
 
 export async function deleteSong(songId: string): Promise<void> {
   await songStorage.deleteSongRow(songId);
+  recordSongDeletions([songId]);
+  requestLibrarySync();
 }
 
 export async function duplicateSong(songToDuplicate: SongRow): Promise<SongRow> {
@@ -96,6 +102,7 @@ export async function duplicateSong(songToDuplicate: SongRow): Promise<SongRow> 
     updatedAt: timestamp,
   };
   await songStorage.insertSongRows([duplicatedRow]);
+  requestLibrarySync();
   return duplicatedRow;
 }
 
@@ -107,14 +114,21 @@ export async function setSongFavorite(
     isFavorite,
     updatedAt: currentTimestampAsIsoString(),
   });
+  requestLibrarySync();
 }
 
 /** Replaces the entire library — used by JSON import's "Replace" mode (§8.6). */
 export async function replaceAllSongsWithImportedRows(
   importedRows: SongRow[],
 ): Promise<void> {
+  const importedSongIds = new Set(importedRows.map((importedRow) => importedRow.id));
+  const replacedSongs = await songStorage.selectAllSongRows();
   await songStorage.deleteAllSongRows();
   await songStorage.insertSongRows(importedRows);
+  recordSongDeletions(
+    replacedSongs.map((replacedSong) => replacedSong.id).filter((id) => !importedSongIds.has(id)),
+  );
+  requestLibrarySync();
 }
 
 /**
@@ -128,6 +142,7 @@ export async function mergeImportedSongRows(importedRows: SongRow[]): Promise<nu
     (importedRow) => !existingSongIds.has(importedRow.id),
   );
   await songStorage.insertSongRows(rowsToInsert);
+  requestLibrarySync();
   return rowsToInsert.length;
 }
 

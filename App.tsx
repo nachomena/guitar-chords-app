@@ -14,6 +14,7 @@ import {
 
 import { useDatabaseMigrations } from './src/db/useDatabaseMigrations';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { useLibrarySync } from './src/sync/useLibrarySync';
 import { AppThemeProvider, useAppTheme } from './src/theme/ThemeProvider';
 
 void SplashScreen.preventAutoHideAsync();
@@ -22,6 +23,7 @@ const queryClient = new QueryClient();
 
 function NavigationRoot() {
   const { isDarkTheme } = useAppTheme();
+  useLibrarySync();
   return (
     <NavigationContainer>
       <StatusBar style={isDarkTheme ? 'light' : 'dark'} />
