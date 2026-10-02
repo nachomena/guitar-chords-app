@@ -5,14 +5,7 @@
 // Editor's live preview, so colors are passed in rather than read from the app theme
 // directly — the Performance view has its own independent light/dark toggle that can
 // differ from the Settings theme (§5.1/§5.6).
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-  type LayoutChangeEvent,
-  type TextStyle,
-} from 'react-native';
+import { StyleSheet, Text, View, type LayoutChangeEvent, type TextStyle } from 'react-native';
 
 import {
   buildTokenRowSegments,
@@ -445,7 +438,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     // numberOfLines={1} becomes `white-space: nowrap` on react-native-web, which
     // collapses each token's trailing space ("one [G]two" rendered as "onetwo").
-    ...(Platform.OS === 'web' ? ({ whiteSpace: 'pre' } as TextStyle) : null),
+    ...({ whiteSpace: 'pre' } as TextStyle),
   },
   sectionLabel: {
     textTransform: 'uppercase',
@@ -461,7 +454,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   tabLineText: {
-    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
+    fontFamily: 'monospace',
     lineHeight: 18,
   },
   strumPill: {

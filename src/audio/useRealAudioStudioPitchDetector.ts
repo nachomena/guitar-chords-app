@@ -1,22 +1,6 @@
 // Wires the validated pitch-detection algorithm (pitchDetectionAlgorithm.ts) up to a
 // real microphone stream via @siteed/audio-studio.
-//
-// Only ever reached through the guarded require() in usePitchDetector.ts — never
-// statically imported from anywhere else in the app. Evaluating '@siteed/audio-studio'
-// calls expo-modules-core's requireNativeModule('AudioStudio') immediately at
-// import time, which throws in Expo Go: that native module isn't part of the fixed
-// set Expo Go ships with, so merely importing this file there would crash the whole
-// app on startup, not just the Tuner screen.
-//
-// UNVERIFIED ON A REAL DEVICE: this environment has no simulator or physical device
-// to build an Expo Dev Client against (see the implementation plan) — this needs a
-// real on-device pass before being trusted. What's confirmed so far, without a
-// device: the algorithm itself (pitchDetectionAlgorithm.test.ts, against synthetic
-// tones) and that @siteed/audio-studio's Expo config plugin resolves and applies
-// cleanly (`npx expo config --type introspect`, no crash, correct
-// NSMicrophoneUsageDescription/RECORD_AUDIO output) — see app.json.
 import { useCallback, useMemo, useRef } from 'react';
-import { Platform } from 'react-native';
 import { AudioStudioModule, useAudioRecorder } from '@siteed/audio-studio';
 import type { AudioDataEvent } from '@siteed/audio-studio';
 
@@ -76,7 +60,6 @@ export function useRealAudioStudioPitchDetector(): PitchDetector {
 
   return useMemo<PitchDetector>(
     () => ({
-      isImplemented: true,
       requestMicrophonePermission: async () => {
         const permissionResult: { granted?: boolean } =
           await AudioStudioModule.requestPermissionsAsync();
@@ -91,8 +74,8 @@ export function useRealAudioStudioPitchDetector(): PitchDetector {
           encoding: 'pcm_32bit',
           streamFormat: 'float32',
           // The web recorder batches audio into 500 ms chunks by default, which makes
-          // the needle visibly laggy — deliver smaller chunks there.
-          ...(Platform.OS === 'web' ? { interval: 100 } : {}),
+          // the needle visibly laggy — deliver smaller chunks.
+          interval: 100,
           onAudioStream: handleAudioStreamEvent,
         });
       },

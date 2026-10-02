@@ -1,7 +1,5 @@
-// The chromatic tuner (SPEC.md §5.6). usePitchDetector() picks the real
-// implementation outside Expo Go and the stub inside it (see usePitchDetector.ts) —
-// with the stub, detection never produces a frequency, so the screen falls back to
-// the manual string picker SPEC.md §5.6 already calls for as an edge-case fallback.
+// The chromatic tuner (SPEC.md §5.6): live pitch detection via usePitchDetector(),
+// plus the manual string picker SPEC.md §5.6 calls for as a fallback.
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { createExponentialMovingAverageFrequencySmoother } from './frequencySmoothing';
@@ -64,7 +62,6 @@ export function useTuner(pitchDetectorOverride?: PitchDetector) {
       : 0;
 
   return {
-    isDetectionImplemented: pitchDetector.isImplemented,
     strings: STANDARD_GUITAR_TUNING_STRINGS,
     activeStringIndex,
     activeString,

@@ -1,8 +1,5 @@
-// The chromatic Tuner screen (SPEC.md §5.6). Real-time pitch detection isn't wired
-// up in this build (see src/audio/stubPitchDetector.ts and the implementation
-// plan) — the manual string picker SPEC.md already calls for as an edge-case
-// fallback is the primary interaction here until a native audio module is built and
-// tested on a physical device.
+// The chromatic Tuner screen (SPEC.md §5.6): live pitch detection from the
+// microphone, plus the manual string picker SPEC.md calls for as a fallback.
 import React, { useEffect, useRef } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -88,14 +85,6 @@ export function TunerScreen({ navigation }: NativeStackScreenProps<RootStackPara
       </View>
 
       <View style={styles.body}>
-        {!tuner.isDetectionImplemented ? (
-          <View style={[styles.notImplementedBanner, { backgroundColor: colorPalette.surface }]}>
-            <Text style={{ color: colorPalette.textMuted, fontSize: 12, textAlign: 'center' }}>
-              Live pitch detection isn't wired up on this build yet — pick your string below.
-            </Text>
-          </View>
-        ) : null}
-
         <Text style={{ color: colorPalette.textMuted, fontSize: 13 }}>
           Target {Math.round(tuner.activeString.targetFrequencyHz)} Hz
         </Text>
@@ -212,14 +201,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 18,
     padding: 20,
-  },
-  notImplementedBanner: {
-    position: 'absolute',
-    top: 8,
-    left: 20,
-    right: 20,
-    borderRadius: 8,
-    padding: 10,
   },
   noteCircleContainer: {
     width: 180,

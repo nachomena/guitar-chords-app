@@ -2,8 +2,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -431,17 +429,14 @@ function ScrollableFormBody({
   spacing: ReturnType<typeof useAppTheme>['spacing'];
 }) {
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={{ flex: 1 }}>
       <ScrollView
         contentContainerStyle={{ padding: spacing.large, paddingTop: 6, gap: 12 }}
         keyboardShouldPersistTaps="handled"
       >
         {children}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
