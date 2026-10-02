@@ -1,0 +1,30 @@
+# Monthly dependency update PRs. Expo SDK packages are pinned to the SDK's versions,
+# so they're skipped here — upgrade them together with `npx expo install --fix` when
+# moving to a new SDK.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: 'expo'
+      - dependency-name: 'expo-*'
+      - dependency-name: '@expo/*'
+      - dependency-name: 'jest-expo'
+      - dependency-name: 'eslint-config-expo'
+      - dependency-name: 'react'
+      - dependency-name: 'react-dom'
+      - dependency-name: 'react-native'
+      - dependency-name: 'react-native-*'
+      - dependency-name: '@types/react'
+      - dependency-name: '@react-native-async-storage/async-storage'
+      - dependency-name: 'typescript'
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

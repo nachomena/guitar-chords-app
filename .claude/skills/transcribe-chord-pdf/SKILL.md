@@ -5,7 +5,7 @@ description: Convert an attached PDF chord sheet (chords-above-lyrics, or a comp
 
 # Transcribing a PDF chord sheet into Chord App notation
 
-This app's chord-sheet format is documented in `SPEC.md` §6 and implemented in
+This app's chord-sheet format is documented in `docs/SPEC.md` §6 and implemented in
 `src/chordpro/parser.ts` / `src/chordpro/rendering.ts`. It extends plain ChordPro
 with a few non-standard constructs built specifically to make transcribing real-world
 PDFs (which are almost always laid out chords-above-lyrics, not inline-bracket) fast

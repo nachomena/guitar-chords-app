@@ -1,5 +1,20 @@
 # Chord App — Product & Technical Specification
 
+> **Historical document.** This is the original v1 design spec, written when the app
+> was a native iOS/Android app. The product and chord notation sections still describe
+> the app, but it has since changed in a few ways the rest of this document doesn't
+> reflect:
+>
+> - **Web only.** The app ships as a website (an installable PWA) on GitHub Pages,
+>   not as native iOS/Android builds.
+> - **Storage.** Songs live in the browser's `localStorage`, not in SQLite/Drizzle
+>   (§8.2 data model fields are unchanged; see `src/db/schema.ts`).
+> - **Sync.** Besides JSON export/import (§8.6), the library can sync across devices
+>   through a secret GitHub gist (`src/sync/`).
+> - **Follow Mode (§5.5) was removed.** The microphone is used only by the Tuner.
+>
+> See the [README](../README.md) for the current state.
+
 **Status:** Draft v1
 **Owner:** Ignacio
 **Last updated:** 2026-08-04
