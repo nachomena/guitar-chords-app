@@ -32,7 +32,7 @@ jobs:
       - run: npm run build:web
       # GitHub Pages' Jekyll step would drop the `_expo` folder (leading underscore).
       - run: touch dist/.nojekyll
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
