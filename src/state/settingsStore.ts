@@ -1,7 +1,6 @@
 // App-wide preferences (SPEC.md §5.1 item 4 — Settings). These aren't part of the
-// songs table (§8.2 only models songs), so they're kept in a small persisted zustand
-// store instead of the SQLite database — a reasonable local key-value store for a
-// handful of app preferences.
+// song library (§8.2 only models songs), so they're kept in a small persisted zustand
+// store — a reasonable local key-value store for a handful of app preferences.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';

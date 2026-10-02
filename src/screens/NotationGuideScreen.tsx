@@ -3,7 +3,7 @@
 // "?" button and Settings.
 import React from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Polyline } from 'react-native-svg';
 
@@ -102,7 +102,7 @@ export function NotationGuideScreen({
                 style={{
                   color: colorPalette.accentRamp[300],
                   fontSize: 12,
-                  fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
+                  fontFamily: 'monospace',
                 }}
               >
                 {entry.code}

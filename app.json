@@ -3,45 +3,8 @@
     "name": "Chord App",
     "slug": "chord-app",
     "version": "1.0.0",
-    "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.nachomena.chordapp"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#161826",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
-      "predictiveBackGestureEnabled": false,
-      "package": "com.nachomena.chordapp"
-    },
-    "plugins": [
-      [
-        "@siteed/audio-studio",
-        {
-          "enableBackgroundAudio": false,
-          "enableNotifications": false,
-          "enablePhoneStateHandling": false,
-          "enableDeviceDetection": false,
-          "iosConfig": {
-            "microphoneUsageDescription": "Chord App uses the microphone for the guitar tuner and Follow Mode auto-scroll."
-          }
-        }
-      ],
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "deploymentTarget": "16.4"
-          }
-        }
-      ]
-    ],
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
