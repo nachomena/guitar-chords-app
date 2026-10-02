@@ -1,7 +1,7 @@
 // The Settings screen (SPEC.md §5.1 item 4).
 import React, { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import Svg, { Polyline } from 'react-native-svg';
@@ -11,6 +11,7 @@ import { SONGS_QUERY_KEY } from '../db/songs';
 import type { RootStackParamList } from '../navigation/types';
 import { useSettingsStore, type AppThemePreference } from '../state/settingsStore';
 import { useAppTheme } from '../theme/ThemeProvider';
+import { showAlert } from '../utils/showAlert';
 
 function BackChevronIcon({ color }: { color: string }) {
   return (
@@ -107,7 +108,7 @@ export function SettingsScreen({ navigation }: NativeStackScreenProps<RootStackP
     try {
       await exportSongLibraryToJsonFile();
     } catch (exportError) {
-      Alert.alert('Export failed', exportError instanceof Error ? exportError.message : 'Please try again.');
+      showAlert('Export failed', exportError instanceof Error ? exportError.message : 'Please try again.');
     } finally {
       setIsExporting(false);
     }
@@ -119,24 +120,24 @@ export function SettingsScreen({ navigation }: NativeStackScreenProps<RootStackP
       const importResult = await pickJsonFileAndImportLibrary(mode);
       if (importResult.status === 'success') {
         await queryClient.invalidateQueries({ queryKey: SONGS_QUERY_KEY });
-        Alert.alert(
+        showAlert(
           'Import complete',
           mode === 'replace'
             ? `Library replaced with ${importResult.importedSongCount} song${importResult.importedSongCount === 1 ? '' : 's'}.`
             : `Added ${importResult.importedSongCount} new song${importResult.importedSongCount === 1 ? '' : 's'}.`,
         );
       } else if (importResult.status === 'invalidFile') {
-        Alert.alert('Import failed', 'That file doesn’t look like a Chord App backup.');
+        showAlert('Import failed', 'That file doesn’t look like a Chord App backup.');
       }
     } catch (importError) {
-      Alert.alert('Import failed', importError instanceof Error ? importError.message : 'Please try again.');
+      showAlert('Import failed', importError instanceof Error ? importError.message : 'Please try again.');
     } finally {
       setIsImporting(false);
     }
   };
 
   const handleImportLibrary = () => {
-    Alert.alert('Import library', 'Merge with your current library, or replace it entirely?', [
+    showAlert('Import library', 'Merge with your current library, or replace it entirely?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Merge', onPress: () => void runImport('merge') },
       { text: 'Replace', style: 'destructive', onPress: () => void runImport('replace') },

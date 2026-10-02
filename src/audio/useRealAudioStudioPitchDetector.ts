@@ -16,6 +16,7 @@
 // cleanly (`npx expo config --type introspect`, no crash, correct
 // NSMicrophoneUsageDescription/RECORD_AUDIO output) — see app.json.
 import { useCallback, useMemo, useRef } from 'react';
+import { Platform } from 'react-native';
 import { AudioStudioModule, useAudioRecorder } from '@siteed/audio-studio';
 import type { AudioDataEvent } from '@siteed/audio-studio';
 
@@ -89,6 +90,9 @@ export function useRealAudioStudioPitchDetector(): PitchDetector {
           channels: 1,
           encoding: 'pcm_32bit',
           streamFormat: 'float32',
+          // The web recorder batches audio into 500 ms chunks by default, which makes
+          // the needle visibly laggy — deliver smaller chunks there.
+          ...(Platform.OS === 'web' ? { interval: 100 } : {}),
           onAudioStream: handleAudioStreamEvent,
         });
       },

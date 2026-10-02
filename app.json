@@ -41,6 +41,18 @@
           }
         }
       ]
-    ]
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single",
+      "name": "Chord App",
+      "shortName": "Chords",
+      "themeColor": "#161826",
+      "backgroundColor": "#161826"
+    },
+    "experiments": {
+      "baseUrl": "/guitar-chords-app"
+    }
   }
 }

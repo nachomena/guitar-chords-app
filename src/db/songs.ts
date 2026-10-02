@@ -3,7 +3,6 @@
 // happen client-side over the full loaded list, which is fine at personal-library
 // scale per §8.7).
 import * as Crypto from 'expo-crypto';
-import { eq } from 'drizzle-orm';
 import {
   useMutation,
   useQuery,
@@ -12,8 +11,8 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 
-import { database } from './client';
-import { songsTable, type SongRow } from './schema';
+import type { SongRow } from './schema';
+import { songStorage } from './songStorage';
 
 export const SONGS_QUERY_KEY = ['songs'] as const;
 
@@ -52,52 +51,43 @@ function songInputFieldsToRow(
 }
 
 export async function getAllSongs(): Promise<SongRow[]> {
-  return database.select().from(songsTable).all();
+  return songStorage.selectAllSongRows();
 }
 
 export async function getSongById(songId: string): Promise<SongRow | undefined> {
-  const rows = await database
-    .select()
-    .from(songsTable)
-    .where(eq(songsTable.id, songId))
-    .all();
-  return rows[0];
+  return songStorage.selectSongRowById(songId);
 }
 
 export async function createSong(songInputFields: SongInputFields): Promise<SongRow> {
   const timestamp = currentTimestampAsIsoString();
-  const newRow: typeof songsTable.$inferInsert = {
+  const newRow: SongRow = {
     id: Crypto.randomUUID(),
     ...songInputFieldsToRow(songInputFields),
     isFavorite: false,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
-  await database.insert(songsTable).values(newRow).run();
-  return newRow as SongRow;
+  await songStorage.insertSongRows([newRow]);
+  return newRow;
 }
 
 export async function updateSong(
   songId: string,
   songInputFields: SongInputFields,
 ): Promise<void> {
-  await database
-    .update(songsTable)
-    .set({
-      ...songInputFieldsToRow(songInputFields),
-      updatedAt: currentTimestampAsIsoString(),
-    })
-    .where(eq(songsTable.id, songId))
-    .run();
+  await songStorage.updateSongRowFields(songId, {
+    ...songInputFieldsToRow(songInputFields),
+    updatedAt: currentTimestampAsIsoString(),
+  });
 }
 
 export async function deleteSong(songId: string): Promise<void> {
-  await database.delete(songsTable).where(eq(songsTable.id, songId)).run();
+  await songStorage.deleteSongRow(songId);
 }
 
 export async function duplicateSong(songToDuplicate: SongRow): Promise<SongRow> {
   const timestamp = currentTimestampAsIsoString();
-  const duplicatedRow: typeof songsTable.$inferInsert = {
+  const duplicatedRow: SongRow = {
     ...songToDuplicate,
     id: Crypto.randomUUID(),
     title: `${songToDuplicate.title} (copy)`,
@@ -105,29 +95,26 @@ export async function duplicateSong(songToDuplicate: SongRow): Promise<SongRow> 
     createdAt: timestamp,
     updatedAt: timestamp,
   };
-  await database.insert(songsTable).values(duplicatedRow).run();
-  return duplicatedRow as SongRow;
+  await songStorage.insertSongRows([duplicatedRow]);
+  return duplicatedRow;
 }
 
 export async function setSongFavorite(
   songId: string,
   isFavorite: boolean,
 ): Promise<void> {
-  await database
-    .update(songsTable)
-    .set({ isFavorite, updatedAt: currentTimestampAsIsoString() })
-    .where(eq(songsTable.id, songId))
-    .run();
+  await songStorage.updateSongRowFields(songId, {
+    isFavorite,
+    updatedAt: currentTimestampAsIsoString(),
+  });
 }
 
 /** Replaces the entire library — used by JSON import's "Replace" mode (§8.6). */
 export async function replaceAllSongsWithImportedRows(
   importedRows: SongRow[],
 ): Promise<void> {
-  await database.delete(songsTable).run();
-  for (const importedRow of importedRows) {
-    await database.insert(songsTable).values(importedRow).run();
-  }
+  await songStorage.deleteAllSongRows();
+  await songStorage.insertSongRows(importedRows);
 }
 
 /**
@@ -140,9 +127,7 @@ export async function mergeImportedSongRows(importedRows: SongRow[]): Promise<nu
   const rowsToInsert = importedRows.filter(
     (importedRow) => !existingSongIds.has(importedRow.id),
   );
-  for (const rowToInsert of rowsToInsert) {
-    await database.insert(songsTable).values(rowToInsert).run();
-  }
+  await songStorage.insertSongRows(rowsToInsert);
   return rowsToInsert.length;
 }
 

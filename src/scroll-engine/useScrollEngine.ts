@@ -187,14 +187,21 @@ export function useScrollEngine({
   // wants the screen to lock mid-song and lose their place. Released the instant
   // playback stops (pause, reaching the end, or unmount), not just when the
   // Performance view closes.
+  //
+  // On web (Screen Wake Lock API) deactivating a lock that was never acquired —
+  // or is still being acquired — rejects, so only release one this effect
+  // activated, after its activation settles. Failures are ignored either way:
+  // the browser may refuse a wake lock (e.g. tab hidden, unsupported).
   useEffect(() => {
-    if (isPlaying) {
-      void activateKeepAwakeAsync(AUTO_SCROLL_KEEP_AWAKE_TAG);
-    } else {
-      void deactivateKeepAwake(AUTO_SCROLL_KEEP_AWAKE_TAG);
-    }
+    if (!isPlaying) return;
+    const keepAwakeActivation = activateKeepAwakeAsync(AUTO_SCROLL_KEEP_AWAKE_TAG).then(
+      () => true,
+      () => false,
+    );
     return () => {
-      void deactivateKeepAwake(AUTO_SCROLL_KEEP_AWAKE_TAG);
+      void keepAwakeActivation.then(async (didActivate) => {
+        if (didActivate) await deactivateKeepAwake(AUTO_SCROLL_KEEP_AWAKE_TAG);
+      }).catch(() => undefined);
     };
   }, [isPlaying]);
 

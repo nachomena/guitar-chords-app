@@ -4,25 +4,14 @@ import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
-import { getAllSongs, mergeImportedSongRows, replaceAllSongsWithImportedRows } from './songs';
-import type { SongRow } from './schema';
+import { getAllSongs } from './songs';
+import {
+  importSongLibraryFromJsonText,
+  type ImportLibraryMode,
+  type ImportLibraryResult,
+} from './backupShared';
 
-function isValidSongRow(candidateValue: unknown): candidateValue is SongRow {
-  if (typeof candidateValue !== 'object' || candidateValue === null) return false;
-  const candidateRecord = candidateValue as Record<string, unknown>;
-  return (
-    typeof candidateRecord.id === 'string' &&
-    typeof candidateRecord.title === 'string' &&
-    typeof candidateRecord.artist === 'string' &&
-    typeof candidateRecord.chordSheet === 'string' &&
-    typeof candidateRecord.createdAt === 'string' &&
-    typeof candidateRecord.updatedAt === 'string'
-  );
-}
-
-function isValidSongRowArray(candidateValue: unknown): candidateValue is SongRow[] {
-  return Array.isArray(candidateValue) && candidateValue.every(isValidSongRow);
-}
+export type { ImportLibraryMode, ImportLibraryResult };
 
 function todayAsFileNameDateStamp(): string {
   return new Date().toISOString().slice(0, 10);
@@ -49,13 +38,6 @@ export async function exportSongLibraryToJsonFile(): Promise<void> {
   });
 }
 
-export type ImportLibraryMode = 'merge' | 'replace';
-
-export type ImportLibraryResult =
-  | { status: 'cancelled' }
-  | { status: 'invalidFile' }
-  | { status: 'success'; mode: ImportLibraryMode; importedSongCount: number };
-
 /**
  * Opens the document picker for a previously exported JSON file, validates it, then
  * either merges it into the existing library (skipping duplicates by `id`) or
@@ -74,22 +56,5 @@ export async function pickJsonFileAndImportLibrary(
   }
 
   const pickedFile = new File(documentPickerResult.assets[0].uri);
-  let parsedFileContents: unknown;
-  try {
-    parsedFileContents = JSON.parse(await pickedFile.text());
-  } catch {
-    return { status: 'invalidFile' };
-  }
-
-  if (!isValidSongRowArray(parsedFileContents)) {
-    return { status: 'invalidFile' };
-  }
-
-  if (importLibraryMode === 'replace') {
-    await replaceAllSongsWithImportedRows(parsedFileContents);
-    return { status: 'success', mode: 'replace', importedSongCount: parsedFileContents.length };
-  }
-
-  const mergedSongCount = await mergeImportedSongRows(parsedFileContents);
-  return { status: 'success', mode: 'merge', importedSongCount: mergedSongCount };
+  return importSongLibraryFromJsonText(await pickedFile.text(), importLibraryMode);
 }
