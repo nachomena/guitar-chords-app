@@ -29,7 +29,16 @@ const BASE_CHORD_FONT_SIZE_PIXELS = 12;
 
 function BackChevronIcon({ color }: { color: string }) {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round">
+    <Svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <Polyline points="15 18 9 12 15 6" />
     </Svg>
   );
@@ -37,7 +46,16 @@ function BackChevronIcon({ color }: { color: string }) {
 
 function EditPencilIcon({ color }: { color: string }) {
   return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round">
+    <Svg
+      width={18}
+      height={18}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2.25}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <Path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
       <Path d="M15 5l4 4" />
     </Svg>
@@ -62,7 +80,16 @@ function LightModeIcon({ color }: { color: string }) {
 
 function QrCodeIcon({ color }: { color: string }) {
   return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Svg
+      width={18}
+      height={18}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <Rect x={3} y={3} width={7} height={7} />
       <Rect x={14} y={3} width={7} height={7} />
       <Rect x={3} y={14} width={7} height={7} />
@@ -92,8 +119,14 @@ export function SongDetailScreen({
   const [isQrModalVisible, setIsQrModalVisible] = useState(false);
   const { selectedChordSymbol, openChordPopover, closeChordPopover } = useChordPopover();
 
-  const parsedSong = useMemo(() => parseChordProSongText(song?.chordSheet ?? ''), [song?.chordSheet]);
-  const renderableLines = useMemo(() => groupParsedLinesForRendering(parsedSong.lines), [parsedSong.lines]);
+  const parsedSong = useMemo(
+    () => parseChordProSongText(song?.chordSheet ?? ''),
+    [song?.chordSheet],
+  );
+  const renderableLines = useMemo(
+    () => groupParsedLinesForRendering(parsedSong.lines),
+    [parsedSong.lines],
+  );
 
   const scrollTimeSourceSelection = useMemo(
     () =>
@@ -130,24 +163,29 @@ export function SongDetailScreen({
   const performanceColors = isPerformanceDarkMode ? darkColorPalette : lightColorPalette;
 
   return (
-    <View style={[styles.container, { backgroundColor: performanceColors.background, paddingTop: insets.top }]}>
-      <View
-        style={[
-          styles.header,
-          { borderBottomColor: `${performanceColors.textMuted}40` },
-        ]}
-      >
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: performanceColors.background, paddingTop: insets.top },
+      ]}
+    >
+      <View style={[styles.header, { borderBottomColor: `${performanceColors.textMuted}40` }]}>
         <Pressable hitSlop={8} onPress={() => navigation.goBack()} style={styles.headerIconButton}>
           <BackChevronIcon color={performanceColors.text} />
         </Pressable>
         <View style={styles.headerTitleColumn}>
           <Text
             numberOfLines={1}
-            style={[styles.headerTitle, { color: performanceColors.text, fontFamily: fontFamily.headingMedium }]}
+            style={[
+              styles.headerTitle,
+              { color: performanceColors.text, fontFamily: fontFamily.headingMedium },
+            ]}
           >
             {song.title}
           </Text>
-          <Text style={[styles.headerArtist, { color: performanceColors.textMuted }]}>{song.artist}</Text>
+          <Text style={[styles.headerArtist, { color: performanceColors.textMuted }]}>
+            {song.artist}
+          </Text>
         </View>
         {song.capo && song.capo > 0 ? (
           <View style={[styles.capoLabel, { borderColor: performanceColors.accent }]}>

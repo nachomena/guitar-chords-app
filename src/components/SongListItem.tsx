@@ -74,7 +74,10 @@ export function SongListItem({
         <View style={styles.titleColumn}>
           <Text
             numberOfLines={1}
-            style={[styles.title, { color: colorPalette.text, fontFamily: fontFamily.headingMedium }]}
+            style={[
+              styles.title,
+              { color: colorPalette.text, fontFamily: fontFamily.headingMedium },
+            ]}
           >
             {song.title}
           </Text>
@@ -91,7 +94,12 @@ export function SongListItem({
             />
           </Pressable>
 
-          <Pressable ref={menuButtonRef} hitSlop={8} onPress={handleOpenMenu} style={styles.iconButton}>
+          <Pressable
+            ref={menuButtonRef}
+            hitSlop={8}
+            onPress={handleOpenMenu}
+            style={styles.iconButton}
+          >
             <OverflowMenuIcon color={colorPalette.textMuted} />
           </Pressable>
         </View>

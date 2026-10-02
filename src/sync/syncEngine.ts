@@ -118,7 +118,12 @@ async function pullMergeAndPush(gitHubToken: string): Promise<boolean> {
   if (!areSyncedLibrariesEqual(localLibrary, mergedLibrary)) {
     const currentLocalLibrary = await readLocalLibrary();
     if (!areSyncedLibrariesEqual(localLibrary, currentLocalLibrary)) return false;
-    if (!areSyncedLibrariesEqual({ ...localLibrary, deletedSongs: [] }, { ...mergedLibrary, deletedSongs: [] })) {
+    if (
+      !areSyncedLibrariesEqual(
+        { ...localLibrary, deletedSongs: [] },
+        { ...mergedLibrary, deletedSongs: [] },
+      )
+    ) {
       await songStorage.deleteAllSongRows();
       await songStorage.insertSongRows(mergedLibrary.songs);
       localLibraryReplacedListener?.();

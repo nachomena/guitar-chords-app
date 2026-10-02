@@ -21,9 +21,7 @@ describe('buildLyricsSearchUrl', () => {
     expect(buildLyricsSearchUrl('Wonderwall', '')).toBe(
       'https://www.google.com/search?q=Wonderwall%20letra',
     );
-    expect(buildLyricsSearchUrl('', 'Oasis')).toBe(
-      'https://www.google.com/search?q=Oasis%20letra',
-    );
+    expect(buildLyricsSearchUrl('', 'Oasis')).toBe('https://www.google.com/search?q=Oasis%20letra');
   });
 
   it('treats whitespace-only fields as empty', () => {

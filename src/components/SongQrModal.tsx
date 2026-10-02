@@ -71,13 +71,21 @@ export function SongQrModal({
               // strong, predictable contrast, so this deliberately doesn't pull from
               // elevatedSurface's colors the way the surrounding sheet does.
               <View style={[styles.qrCard, { borderRadius: cornerRadius.medium }]}>
-                <QRCode value={lyricsSearchUrl} size={QR_CODE_SIZE_PIXELS} color="#000000" backgroundColor="#ffffff" />
+                <QRCode
+                  value={lyricsSearchUrl}
+                  size={QR_CODE_SIZE_PIXELS}
+                  color="#000000"
+                  backgroundColor="#ffffff"
+                />
               </View>
             ) : (
               <Text
                 style={[
                   styles.emptyStateText,
-                  { color: colorPalette.elevatedSurfaceTextMuted, fontFamily: fontFamily.bodyRegular },
+                  {
+                    color: colorPalette.elevatedSurfaceTextMuted,
+                    fontFamily: fontFamily.bodyRegular,
+                  },
                 ]}
               >
                 Add a title or artist to generate a QR code.

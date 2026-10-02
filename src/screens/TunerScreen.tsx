@@ -19,7 +19,16 @@ const PULSE_RING_DURATION_MILLISECONDS = 1200;
 
 function BackChevronIcon({ color }: { color: string }) {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round">
+    <Svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <Polyline points="15 18 9 12 15 6" />
     </Svg>
   );
@@ -30,7 +39,8 @@ export function TunerScreen({ navigation }: NativeStackScreenProps<RootStackPara
   const { colorPalette, fontFamily } = useAppTheme();
   const tuner = useTuner();
 
-  const isInTune = Math.abs(tuner.centsOffset) <= IN_TUNE_TOLERANCE_CENTS && tuner.detectedFrequencyHz !== null;
+  const isInTune =
+    Math.abs(tuner.centsOffset) <= IN_TUNE_TOLERANCE_CENTS && tuner.detectedFrequencyHz !== null;
   const noteColor = isInTune ? colorPalette.accent : colorPalette.textMuted;
   const needlePercentage = Math.max(0, Math.min(100, tuner.centsOffset + 50));
 
@@ -67,19 +77,32 @@ export function TunerScreen({ navigation }: NativeStackScreenProps<RootStackPara
     return () => pulseLoop.stop();
   }, [isInTune, pulseAnimatedValue]);
 
-  const pulseRingScale = pulseAnimatedValue.interpolate({ inputRange: [0, 1], outputRange: [1, 1.9] });
+  const pulseRingScale = pulseAnimatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.9],
+  });
   const pulseRingOpacity = pulseAnimatedValue.interpolate({
     inputRange: [0, 0.6, 1],
     outputRange: [0.55, 0.18, 0],
   });
 
   return (
-    <View style={[styles.container, { backgroundColor: colorPalette.background, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colorPalette.background, paddingTop: insets.top },
+      ]}
+    >
       <View style={styles.header}>
         <Pressable hitSlop={8} onPress={() => navigation.goBack()} style={styles.headerIconButton}>
           <BackChevronIcon color={colorPalette.text} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colorPalette.text, fontFamily: fontFamily.headingMedium }]}>
+        <Text
+          style={[
+            styles.headerTitle,
+            { color: colorPalette.text, fontFamily: fontFamily.headingMedium },
+          ]}
+        >
           Tuner
         </Text>
       </View>
@@ -112,14 +135,23 @@ export function TunerScreen({ navigation }: NativeStackScreenProps<RootStackPara
               },
             ]}
           >
-            <Text style={[styles.noteName, { color: noteColor, fontFamily: fontFamily.headingMedium }]}>
+            <Text
+              style={[styles.noteName, { color: noteColor, fontFamily: fontFamily.headingMedium }]}
+            >
               {tuner.activeString.label}
             </Text>
           </View>
         </View>
 
-        <Text style={[styles.playingHz, { color: colorPalette.text, fontFamily: fontFamily.headingMedium }]}>
-          {tuner.detectedFrequencyHz !== null ? `${Math.round(tuner.detectedFrequencyHz)} Hz` : '— Hz'}
+        <Text
+          style={[
+            styles.playingHz,
+            { color: colorPalette.text, fontFamily: fontFamily.headingMedium },
+          ]}
+        >
+          {tuner.detectedFrequencyHz !== null
+            ? `${Math.round(tuner.detectedFrequencyHz)} Hz`
+            : '— Hz'}
         </Text>
         <Text style={{ color: noteColor, fontSize: 14, fontWeight: '600' }}>
           {tuner.detectedFrequencyHz !== null
@@ -129,7 +161,9 @@ export function TunerScreen({ navigation }: NativeStackScreenProps<RootStackPara
 
         <View style={styles.gaugeContainer}>
           <View style={[styles.gaugeTrack, { backgroundColor: colorPalette.neutral[800] }]}>
-            <View style={[styles.gaugeCenterTick, { backgroundColor: colorPalette.neutral[600] }]} />
+            <View
+              style={[styles.gaugeCenterTick, { backgroundColor: colorPalette.neutral[600] }]}
+            />
             <Animated.View
               style={[
                 styles.gaugeNeedle,

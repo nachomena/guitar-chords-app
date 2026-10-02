@@ -65,7 +65,16 @@ const NOTATION_GUIDE_ENTRIES = [
 
 function BackChevronIcon({ color }: { color: string }) {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round">
+    <Svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <Polyline points="15 18 9 12 15 6" />
     </Svg>
   );
@@ -78,12 +87,22 @@ export function NotationGuideScreen({
   const { colorPalette, cornerRadius, fontFamily } = useAppTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: colorPalette.background, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colorPalette.background, paddingTop: insets.top },
+      ]}
+    >
       <View style={styles.header}>
         <Pressable hitSlop={8} onPress={() => navigation.goBack()} style={styles.headerIconButton}>
           <BackChevronIcon color={colorPalette.text} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colorPalette.text, fontFamily: fontFamily.headingMedium }]}>
+        <Text
+          style={[
+            styles.headerTitle,
+            { color: colorPalette.text, fontFamily: fontFamily.headingMedium },
+          ]}
+        >
           Notation Guide
         </Text>
       </View>
@@ -91,7 +110,9 @@ export function NotationGuideScreen({
       <ScrollView contentContainerStyle={styles.entriesContainer}>
         {NOTATION_GUIDE_ENTRIES.map((entry) => (
           <View key={entry.label} style={styles.entry}>
-            <Text style={{ color: colorPalette.textMuted, fontSize: 12, marginBottom: 4 }}>{entry.label}</Text>
+            <Text style={{ color: colorPalette.textMuted, fontSize: 12, marginBottom: 4 }}>
+              {entry.label}
+            </Text>
             <View
               style={[
                 styles.codeBlock,
@@ -108,7 +129,9 @@ export function NotationGuideScreen({
                 {entry.code}
               </Text>
             </View>
-            <Text style={{ color: colorPalette.textMuted, fontSize: 12, marginTop: 4 }}>{entry.note}</Text>
+            <Text style={{ color: colorPalette.textMuted, fontSize: 12, marginTop: 4 }}>
+              {entry.note}
+            </Text>
           </View>
         ))}
       </ScrollView>

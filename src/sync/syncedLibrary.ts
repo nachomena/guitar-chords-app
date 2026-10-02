@@ -38,7 +38,8 @@ export function mergeSyncedLibraries(
     const knownDeletion = latestDeletionBySongId.get(deletedSong.id);
     if (
       !knownDeletion ||
-      timestampToMilliseconds(deletedSong.deletedAt) > timestampToMilliseconds(knownDeletion.deletedAt)
+      timestampToMilliseconds(deletedSong.deletedAt) >
+        timestampToMilliseconds(knownDeletion.deletedAt)
     ) {
       latestDeletionBySongId.set(deletedSong.id, deletedSong);
     }
@@ -70,7 +71,9 @@ export function mergeSyncedLibraries(
 }
 
 function sortById<TItem extends { id: string }>(items: TItem[]): TItem[] {
-  return [...items].sort((first, second) => (first.id < second.id ? -1 : first.id > second.id ? 1 : 0));
+  return [...items].sort((first, second) =>
+    first.id < second.id ? -1 : first.id > second.id ? 1 : 0,
+  );
 }
 
 /** Order-insensitive equality, used to skip writes when nothing changed. */

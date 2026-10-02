@@ -129,7 +129,11 @@ function LyricLineTokenView({
         numberOfLines={1}
         style={[
           styles.lyricText,
-          { fontSize: lyricFontSizePixels, color: colors.lyricText, fontFamily: fontFamily.bodyRegular },
+          {
+            fontSize: lyricFontSizePixels,
+            color: colors.lyricText,
+            fontFamily: fontFamily.bodyRegular,
+          },
         ]}
       >
         {token.lyricText}
@@ -261,7 +265,7 @@ export function ChordSheetView({
   const makeOnLayoutHandler = (lineIndex: number) =>
     onLineHeightMeasured
       ? (layoutChangeEvent: LayoutChangeEvent) =>
-        onLineHeightMeasured(lineIndex, layoutChangeEvent.nativeEvent.layout.height)
+          onLineHeightMeasured(lineIndex, layoutChangeEvent.nativeEvent.layout.height)
       : undefined;
 
   return (
@@ -356,7 +360,11 @@ export function ChordSheetView({
               ))}
               <View style={[styles.repeatedGroupBadge, { backgroundColor: colors.surface }]}>
                 <Text
-                  style={{ fontSize: lyricFontSizePixels * 0.75, color: colors.chordText, fontFamily: fontFamily.bodyBold }}
+                  style={{
+                    fontSize: lyricFontSizePixels * 0.75,
+                    color: colors.chordText,
+                    fontFamily: fontFamily.bodyBold,
+                  }}
                 >
                   × {renderableLine.repeatCount}
                 </Text>

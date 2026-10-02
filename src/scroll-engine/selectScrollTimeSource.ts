@@ -6,8 +6,7 @@ import { computeTotalDurationMillisecondsFromBpmClock } from './timeSources/bpmC
 import { computeTotalDurationMillisecondsFromDurationClock } from './timeSources/durationClock';
 
 export type ScrollTimeSourceSelection =
-  | { isAvailable: true; totalDurationMilliseconds: number }
-  | { isAvailable: false };
+  { isAvailable: true; totalDurationMilliseconds: number } | { isAvailable: false };
 
 export function selectScrollTimeSourceForSong(parameters: {
   durationSeconds: number | null;

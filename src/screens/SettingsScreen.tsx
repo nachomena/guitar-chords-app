@@ -16,7 +16,16 @@ import { showAlert } from '../utils/showAlert';
 
 function BackChevronIcon({ color }: { color: string }) {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round">
+    <Svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <Polyline points="15 18 9 12 15 6" />
     </Svg>
   );
@@ -76,18 +85,28 @@ function FontScaleStepper({
 }) {
   return (
     <View style={styles.fontScaleStepperRow}>
-      <Pressable onPress={onDecrease} style={[styles.fontScaleStepperButton, { borderColor: colorPalette.neutral[700] }]}>
+      <Pressable
+        onPress={onDecrease}
+        style={[styles.fontScaleStepperButton, { borderColor: colorPalette.neutral[700] }]}
+      >
         <Text style={{ color: colorPalette.text, fontSize: 12 }}>Aa-</Text>
       </Pressable>
-      <Text style={{ color: colorPalette.text, fontSize: 13, minWidth: 36, textAlign: 'center' }}>{percentage}%</Text>
-      <Pressable onPress={onIncrease} style={[styles.fontScaleStepperButton, { borderColor: colorPalette.neutral[700] }]}>
+      <Text style={{ color: colorPalette.text, fontSize: 13, minWidth: 36, textAlign: 'center' }}>
+        {percentage}%
+      </Text>
+      <Pressable
+        onPress={onIncrease}
+        style={[styles.fontScaleStepperButton, { borderColor: colorPalette.neutral[700] }]}
+      >
         <Text style={{ color: colorPalette.text, fontSize: 12 }}>Aa+</Text>
       </Pressable>
     </View>
   );
 }
 
-export function SettingsScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'Settings'>) {
+export function SettingsScreen({
+  navigation,
+}: NativeStackScreenProps<RootStackParamList, 'Settings'>) {
   const insets = useSafeAreaInsets();
   const { colorPalette, fontFamily } = useAppTheme();
   const queryClient = useQueryClient();
@@ -96,10 +115,18 @@ export function SettingsScreen({ navigation }: NativeStackScreenProps<RootStackP
   const setThemePreference = useSettingsStore((state) => state.setThemePreference);
   const defaultLyricFontScale = useSettingsStore((state) => state.defaultLyricFontScale);
   const defaultChordFontScale = useSettingsStore((state) => state.defaultChordFontScale);
-  const increaseDefaultLyricFontScale = useSettingsStore((state) => state.increaseDefaultLyricFontScale);
-  const decreaseDefaultLyricFontScale = useSettingsStore((state) => state.decreaseDefaultLyricFontScale);
-  const increaseDefaultChordFontScale = useSettingsStore((state) => state.increaseDefaultChordFontScale);
-  const decreaseDefaultChordFontScale = useSettingsStore((state) => state.decreaseDefaultChordFontScale);
+  const increaseDefaultLyricFontScale = useSettingsStore(
+    (state) => state.increaseDefaultLyricFontScale,
+  );
+  const decreaseDefaultLyricFontScale = useSettingsStore(
+    (state) => state.decreaseDefaultLyricFontScale,
+  );
+  const increaseDefaultChordFontScale = useSettingsStore(
+    (state) => state.increaseDefaultChordFontScale,
+  );
+  const decreaseDefaultChordFontScale = useSettingsStore(
+    (state) => state.decreaseDefaultChordFontScale,
+  );
 
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -109,7 +136,10 @@ export function SettingsScreen({ navigation }: NativeStackScreenProps<RootStackP
     try {
       await exportSongLibraryToJsonFile();
     } catch (exportError) {
-      showAlert('Export failed', exportError instanceof Error ? exportError.message : 'Please try again.');
+      showAlert(
+        'Export failed',
+        exportError instanceof Error ? exportError.message : 'Please try again.',
+      );
     } finally {
       setIsExporting(false);
     }
@@ -131,7 +161,10 @@ export function SettingsScreen({ navigation }: NativeStackScreenProps<RootStackP
         showAlert('Import failed', 'That file doesn’t look like a Chord App backup.');
       }
     } catch (importError) {
-      showAlert('Import failed', importError instanceof Error ? importError.message : 'Please try again.');
+      showAlert(
+        'Import failed',
+        importError instanceof Error ? importError.message : 'Please try again.',
+      );
     } finally {
       setIsImporting(false);
     }
@@ -146,17 +179,30 @@ export function SettingsScreen({ navigation }: NativeStackScreenProps<RootStackP
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colorPalette.background, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colorPalette.background, paddingTop: insets.top },
+      ]}
+    >
       <View style={styles.header}>
         <Pressable hitSlop={8} onPress={() => navigation.goBack()} style={styles.headerIconButton}>
           <BackChevronIcon color={colorPalette.text} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colorPalette.text, fontFamily: fontFamily.headingMedium }]}>
+        <Text
+          style={[
+            styles.headerTitle,
+            { color: colorPalette.text, fontFamily: fontFamily.headingMedium },
+          ]}
+        >
           Settings
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.sectionsContainer} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.sectionsContainer}
+        keyboardShouldPersistTaps="handled"
+      >
         <View>
           <SectionLabel color={colorPalette.textMuted}>Theme</SectionLabel>
           <SegmentedControl
@@ -212,7 +258,10 @@ export function SettingsScreen({ navigation }: NativeStackScreenProps<RootStackP
             <Pressable
               disabled={isExporting}
               onPress={() => void handleExportLibrary()}
-              style={[styles.secondaryButton, { borderColor: colorPalette.divider, opacity: isExporting ? 0.6 : 1 }]}
+              style={[
+                styles.secondaryButton,
+                { borderColor: colorPalette.divider, opacity: isExporting ? 0.6 : 1 },
+              ]}
             >
               <Text style={{ color: colorPalette.text, textAlign: 'center' }}>
                 {isExporting ? 'Exporting…' : 'Export library (JSON)'}
@@ -221,7 +270,10 @@ export function SettingsScreen({ navigation }: NativeStackScreenProps<RootStackP
             <Pressable
               disabled={isImporting}
               onPress={handleImportLibrary}
-              style={[styles.secondaryButton, { borderColor: colorPalette.divider, opacity: isImporting ? 0.6 : 1 }]}
+              style={[
+                styles.secondaryButton,
+                { borderColor: colorPalette.divider, opacity: isImporting ? 0.6 : 1 },
+              ]}
             >
               <Text style={{ color: colorPalette.text, textAlign: 'center' }}>
                 {isImporting ? 'Importing…' : 'Import library (JSON)'}

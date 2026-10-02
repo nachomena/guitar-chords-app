@@ -23,7 +23,16 @@ type LibrarySortOption = 'title' | 'artist' | 'recentlyAdded';
 
 function TunerIcon({ color }: { color: string }) {
   return (
-    <Svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round">
+    <Svg
+      width={19}
+      height={19}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2.25}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <Path d="M8 2v10a4 4 0 0 0 8 0V2" />
       <Line x1={12} y1={16} x2={12} y2={22} />
       <Line x1={9} y1={19} x2={15} y2={19} />
@@ -33,7 +42,16 @@ function TunerIcon({ color }: { color: string }) {
 
 function SettingsIcon({ color }: { color: string }) {
   return (
-    <Svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round">
+    <Svg
+      width={19}
+      height={19}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2.25}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <Circle cx={12} cy={12} r={3} />
       <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </Svg>
@@ -42,7 +60,15 @@ function SettingsIcon({ color }: { color: string }) {
 
 function SearchIcon({ color }: { color: string }) {
   return (
-    <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.75} strokeLinecap="round">
+    <Svg
+      width={15}
+      height={15}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2.75}
+      strokeLinecap="round"
+    >
       <Circle cx={11} cy={11} r={8} />
       <Line x1={21} y1={21} x2={16.65} y2={16.65} />
     </Svg>
@@ -51,7 +77,15 @@ function SearchIcon({ color }: { color: string }) {
 
 function PlusIcon({ color }: { color: string }) {
   return (
-    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.75} strokeLinecap="round">
+    <Svg
+      width={22}
+      height={22}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2.75}
+      strokeLinecap="round"
+    >
       <Line x1={12} y1={5} x2={12} y2={19} />
       <Line x1={5} y1={12} x2={19} y2={12} />
     </Svg>
@@ -65,7 +99,9 @@ function sortSongs(songs: SongRow[], sortOption: LibrarySortOption): SongRow[] {
   } else if (sortOption === 'artist') {
     sortedSongs.sort((firstSong, secondSong) => firstSong.artist.localeCompare(secondSong.artist));
   } else {
-    sortedSongs.sort((firstSong, secondSong) => secondSong.createdAt.localeCompare(firstSong.createdAt));
+    sortedSongs.sort((firstSong, secondSong) =>
+      secondSong.createdAt.localeCompare(firstSong.createdAt),
+    );
   }
   return sortedSongs;
 }
@@ -105,10 +141,10 @@ export function LibraryScreen() {
     const normalizedQuery = searchQuery.trim().toLowerCase();
     const filteredSongs = normalizedQuery
       ? allSongs.filter(
-        (song) =>
-          song.title.toLowerCase().includes(normalizedQuery) ||
-          song.artist.toLowerCase().includes(normalizedQuery),
-      )
+          (song) =>
+            song.title.toLowerCase().includes(normalizedQuery) ||
+            song.artist.toLowerCase().includes(normalizedQuery),
+        )
       : allSongs;
     return sortSongs(filteredSongs, sortOption);
   }, [songsQuery.data, searchQuery, sortOption]);
@@ -123,13 +159,25 @@ export function LibraryScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colorPalette.background, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colorPalette.background, paddingTop: insets.top },
+      ]}
+    >
       <View style={styles.header}>
         <View>
-          <Text style={[styles.headerTitle, { color: colorPalette.text, fontFamily: fontFamily.headingMedium }]}>
+          <Text
+            style={[
+              styles.headerTitle,
+              { color: colorPalette.text, fontFamily: fontFamily.headingMedium },
+            ]}
+          >
             Your Songs
           </Text>
-          <Text style={[styles.headerSubtitle, { color: colorPalette.textMuted }]}>{songCountLabel}</Text>
+          <Text style={[styles.headerSubtitle, { color: colorPalette.textMuted }]}>
+            {songCountLabel}
+          </Text>
         </View>
         <View style={styles.headerButtons}>
           <Pressable
@@ -161,7 +209,11 @@ export function LibraryScreen() {
             placeholderTextColor={colorPalette.textMuted}
             style={[
               styles.searchInput,
-              { backgroundColor: colorPalette.surface, color: colorPalette.text, borderColor: colorPalette.divider },
+              {
+                backgroundColor: colorPalette.surface,
+                color: colorPalette.text,
+                borderColor: colorPalette.divider,
+              },
             ]}
           />
         </View>
@@ -186,7 +238,8 @@ export function LibraryScreen() {
               <Text
                 style={{
                   fontSize: 13,
-                  color: sortOption === sortSegment.value ? colorPalette.accent : colorPalette.textMuted,
+                  color:
+                    sortOption === sortSegment.value ? colorPalette.accent : colorPalette.textMuted,
                 }}
               >
                 {sortSegment.label}
@@ -216,7 +269,9 @@ export function LibraryScreen() {
         ListEmptyComponent={
           !songsQuery.isLoading ? (
             <Text style={{ color: colorPalette.textMuted, textAlign: 'center', marginTop: 40 }}>
-              {searchQuery ? 'No songs match your search.' : 'No songs yet — tap + to add your first one.'}
+              {searchQuery
+                ? 'No songs match your search.'
+                : 'No songs yet — tap + to add your first one.'}
             </Text>
           ) : null
         }
@@ -240,7 +295,11 @@ export function LibraryScreen() {
 
       <Pressable
         onPress={() => navigation.navigate('SongEditor', {})}
-        style={[styles.floatingAddButton, { backgroundColor: colorPalette.background, borderColor: colorPalette.accent }, elevationShadow.small,]}
+        style={[
+          styles.floatingAddButton,
+          { backgroundColor: colorPalette.background, borderColor: colorPalette.accent },
+          elevationShadow.small,
+        ]}
       >
         <PlusIcon color={colorPalette.accent} />
       </Pressable>

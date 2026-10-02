@@ -76,9 +76,7 @@ export type UseScrollEngineResult = {
   /** Wire to each rendered line's onLayout so the pacing math knows its real height. */
   registerLineHeight: (lineIndex: number, height: number) => void;
   handleManualScrollBeginDrag: () => void;
-  handleManualScrollPositionSettled: (
-    scrollEvent: NativeSyntheticEvent<NativeScrollEvent>,
-  ) => void;
+  handleManualScrollPositionSettled: (scrollEvent: NativeSyntheticEvent<NativeScrollEvent>) => void;
   /** Read `.current` (e.g. on a polling interval) to show playback progress. */
   elapsedMillisecondsRef: React.RefObject<number>;
 };
@@ -104,8 +102,7 @@ export function useScrollEngine({
   // the user's finger.
   const isManuallyDraggingRef = useRef(false);
 
-  const isAutoScrollAvailable =
-    totalDurationMilliseconds !== null && totalDurationMilliseconds > 0;
+  const isAutoScrollAvailable = totalDurationMilliseconds !== null && totalDurationMilliseconds > 0;
 
   useEffect(() => {
     totalDurationMillisecondsRef.current = totalDurationMilliseconds ?? 0;
@@ -124,10 +121,7 @@ export function useScrollEngine({
 
   const applyScrollPositionForElapsed = useCallback((elapsedMilliseconds: number) => {
     const totalDuration = totalDurationMillisecondsRef.current;
-    const maximumScrollOffset = Math.max(
-      0,
-      contentHeightRef.current - scrollViewHeightRef.current,
-    );
+    const maximumScrollOffset = Math.max(0, contentHeightRef.current - scrollViewHeightRef.current);
     const timeFraction = totalDuration > 0 ? elapsedMilliseconds / totalDuration : 0;
     const breakpoints = buildScrollPacingBreakpoints(
       lineTimeWeightsRef.current,
@@ -199,9 +193,11 @@ export function useScrollEngine({
       () => false,
     );
     return () => {
-      void keepAwakeActivation.then(async (didActivate) => {
-        if (didActivate) await deactivateKeepAwake(AUTO_SCROLL_KEEP_AWAKE_TAG);
-      }).catch(() => undefined);
+      void keepAwakeActivation
+        .then(async (didActivate) => {
+          if (didActivate) await deactivateKeepAwake(AUTO_SCROLL_KEEP_AWAKE_TAG);
+        })
+        .catch(() => undefined);
     };
   }, [isPlaying]);
 
@@ -232,12 +228,9 @@ export function useScrollEngine({
     scrollViewHeightRef.current = layoutChangeEvent.nativeEvent.layout.height;
   }, []);
 
-  const handleContentSizeChange = useCallback(
-    (_contentWidth: number, contentHeight: number) => {
-      contentHeightRef.current = contentHeight;
-    },
-    [],
-  );
+  const handleContentSizeChange = useCallback((_contentWidth: number, contentHeight: number) => {
+    contentHeightRef.current = contentHeight;
+  }, []);
 
   const handleManualScrollBeginDrag = useCallback(() => {
     // Deliberately does not pause — see the module comment. The tick loop (if

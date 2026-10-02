@@ -81,7 +81,13 @@ export function splitLyricLineIntoRenderableTokens(
   if (lyricLine.chords.length === 0) {
     const lyricText = lyricLine.text.length > 0 ? lyricLine.text : ' ';
     return [
-      { chordSymbol: null, chordDisplayLabel: null, repeatCountLabel: null, strumAccentGlyphs: null, lyricText },
+      {
+        chordSymbol: null,
+        chordDisplayLabel: null,
+        repeatCountLabel: null,
+        strumAccentGlyphs: null,
+        lyricText,
+      },
     ];
   }
 
@@ -182,7 +188,9 @@ export function distributeLyricWordsAcrossChordTokens(
   const trimmedLyricText = lyricText.trim();
   const words = trimmedLyricText.length > 0 ? trimmedLyricText.split(/\s+/) : [];
 
-  const realChordTokenCount = chordTokens.filter((token) => token.chordDisplayLabel !== null).length;
+  const realChordTokenCount = chordTokens.filter(
+    (token) => token.chordDisplayLabel !== null,
+  ).length;
   let wordCursor = 0;
   let realChordTokensAssignedSoFar = 0;
 
@@ -201,7 +209,10 @@ export function distributeLyricWordsAcrossChordTokens(
     // next chord in line, never silently dropped).
     if (isLastRealChordToken || remainingWords.length === 0) {
       wordCursor = words.length;
-      return { ...chordToken, lyricText: preserveInlineGroupMarkers(chordToken.lyricText, remainingWords.join(' ')) };
+      return {
+        ...chordToken,
+        lyricText: preserveInlineGroupMarkers(chordToken.lyricText, remainingWords.join(' ')),
+      };
     }
 
     const chordTokensLeft = realChordTokenCount - realChordTokensAssignedSoFar + 1;
@@ -227,7 +238,10 @@ export function distributeLyricWordsAcrossChordTokens(
 
     const wordsForThisToken = remainingWords.slice(0, wordCountForThisToken);
     wordCursor += wordCountForThisToken;
-    return { ...chordToken, lyricText: preserveInlineGroupMarkers(chordToken.lyricText, wordsForThisToken.join(' ')) };
+    return {
+      ...chordToken,
+      lyricText: preserveInlineGroupMarkers(chordToken.lyricText, wordsForThisToken.join(' ')),
+    };
   });
 }
 
@@ -275,7 +289,10 @@ export function buildTokenRowSegments(tokens: RenderableLyricToken[]): TokenRowS
   while (tokenIndex < tokens.length) {
     const token = tokens[tokenIndex];
 
-    if (token.strumAccentGlyphs === null && token.lyricText.includes(INLINE_GROUP_OPEN_MARKER_CHARACTER)) {
+    if (
+      token.strumAccentGlyphs === null &&
+      token.lyricText.includes(INLINE_GROUP_OPEN_MARKER_CHARACTER)
+    ) {
       const strippedOpenToken = {
         ...token,
         lyricText: token.lyricText.replace(INLINE_GROUP_OPEN_MARKER_CHARACTER, ''),
@@ -309,14 +326,22 @@ export function buildTokenRowSegments(tokens: RenderableLyricToken[]): TokenRowS
       const strumPatternGlyphs = possiblePatternToken?.strumAccentGlyphs ?? null;
       if (strumPatternGlyphs !== null) tokenIndex += 1; // consumed as this group's pattern
 
-      segments.push({ type: 'inlineStrumGroup', chordTokens: groupChordTokens, strumPatternGlyphs: strumPatternGlyphs ?? '' });
+      segments.push({
+        type: 'inlineStrumGroup',
+        chordTokens: groupChordTokens,
+        strumPatternGlyphs: strumPatternGlyphs ?? '',
+      });
       continue;
     }
 
     if (token.strumAccentGlyphs === null && token.chordDisplayLabel !== null) {
       const nextToken = tokens[tokenIndex + 1];
       if (nextToken?.strumAccentGlyphs != null) {
-        segments.push({ type: 'token', token, attachedStrumAccentGlyphs: nextToken.strumAccentGlyphs });
+        segments.push({
+          type: 'token',
+          token,
+          attachedStrumAccentGlyphs: nextToken.strumAccentGlyphs,
+        });
         tokenIndex += 2;
         continue;
       }
@@ -431,7 +456,9 @@ function stripLeadingGroupOpenMarkerToken(tokens: RenderableLyricToken[]): Rende
   return [{ ...firstToken, lyricText: strippedText }, ...restTokens];
 }
 
-function stripTrailingGroupCloseMarkerToken(tokens: RenderableLyricToken[]): RenderableLyricToken[] {
+function stripTrailingGroupCloseMarkerToken(
+  tokens: RenderableLyricToken[],
+): RenderableLyricToken[] {
   if (tokens.length === 0) return tokens;
   const lastIndex = tokens.length - 1;
   const lastToken = tokens[lastIndex];
@@ -500,7 +527,8 @@ export function groupParsedLinesForRendering(
           groupLines: groupParsedLines.map((groupParsedLine, indexWithinGroup) => {
             let tokens = splitLyricLineIntoRenderableTokens(groupParsedLine);
             if (indexWithinGroup === 0) tokens = stripLeadingGroupOpenMarkerToken(tokens);
-            if (indexWithinGroup === lastGroupLineIndex) tokens = stripTrailingGroupCloseMarkerToken(tokens);
+            if (indexWithinGroup === lastGroupLineIndex)
+              tokens = stripTrailingGroupCloseMarkerToken(tokens);
             return tokens;
           }),
         });
@@ -525,7 +553,10 @@ export function groupParsedLinesForRendering(
     }
 
     if (parsedLine.type === 'lyric') {
-      renderableLines.push({ type: 'lyric', tokens: splitLyricLineIntoRenderableTokens(parsedLine) });
+      renderableLines.push({
+        type: 'lyric',
+        tokens: splitLyricLineIntoRenderableTokens(parsedLine),
+      });
     } else if (parsedLine.type === 'strum') {
       renderableLines.push({ type: 'strum', ...convertStrumPatternToDisplay(parsedLine.pattern) });
     } else {

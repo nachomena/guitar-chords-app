@@ -117,7 +117,11 @@ export function ChordDiagram({ position }: { position: ChordDiagramPosition }) {
             key={`barre-${barreIndex}`}
             x={stringXPosition(barreSpan.fromStringIndex) - 6}
             y={fretRowYPosition(barreSpan.fretRow) - FRET_ROW_HEIGHT / 2 + 4}
-            width={stringXPosition(barreSpan.toStringIndex) - stringXPosition(barreSpan.fromStringIndex) + 12}
+            width={
+              stringXPosition(barreSpan.toStringIndex) -
+              stringXPosition(barreSpan.fromStringIndex) +
+              12
+            }
             height={FRET_ROW_HEIGHT - 8}
             rx={(FRET_ROW_HEIGHT - 8) / 2}
             fill={colorPalette.accent}

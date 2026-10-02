@@ -21,7 +21,7 @@ describe('parseChordProSongText', () => {
       '{duration: 4:18}',
       '',
       '{strum: D-DU-UDU-}',
-      "[Em7]Today is gonna be the [G]day",
+      '[Em7]Today is gonna be the [G]day',
       "That they're gonna throw it [Dsus4]back to [A7sus4]you",
     ].join('\n');
 
@@ -89,7 +89,7 @@ describe('parseChordProSongText', () => {
       '{end_of_tab}',
       '{comment: Verse 1}',
       '{strum: Finger picking}',
-      "[G]Another turning point, a fork stuck in the [Cadd9]road[D]",
+      '[G]Another turning point, a fork stuck in the [Cadd9]road[D]',
     ].join('\n');
 
     const parsedSong = parseChordProSongText(goodRiddanceIntroTabText);
@@ -148,10 +148,34 @@ describe('groupParsedLinesForRendering', () => {
       {
         type: 'distributedChordLine',
         chordTokens: [
-          { chordSymbol: 'D', chordDisplayLabel: 'D', repeatCountLabel: null, strumAccentGlyphs: null, lyricText: ' ' },
-          { chordSymbol: 'G', chordDisplayLabel: 'G', repeatCountLabel: null, strumAccentGlyphs: null, lyricText: ' ' },
-          { chordSymbol: 'D', chordDisplayLabel: 'D', repeatCountLabel: null, strumAccentGlyphs: null, lyricText: ' ' },
-          { chordSymbol: 'G', chordDisplayLabel: 'G', repeatCountLabel: null, strumAccentGlyphs: null, lyricText: '' },
+          {
+            chordSymbol: 'D',
+            chordDisplayLabel: 'D',
+            repeatCountLabel: null,
+            strumAccentGlyphs: null,
+            lyricText: ' ',
+          },
+          {
+            chordSymbol: 'G',
+            chordDisplayLabel: 'G',
+            repeatCountLabel: null,
+            strumAccentGlyphs: null,
+            lyricText: ' ',
+          },
+          {
+            chordSymbol: 'D',
+            chordDisplayLabel: 'D',
+            repeatCountLabel: null,
+            strumAccentGlyphs: null,
+            lyricText: ' ',
+          },
+          {
+            chordSymbol: 'G',
+            chordDisplayLabel: 'G',
+            repeatCountLabel: null,
+            strumAccentGlyphs: null,
+            lyricText: '',
+          },
         ],
         lyricText: 'Qué voy a hacer con tanto cielo para mí',
       },
@@ -215,8 +239,20 @@ describe('groupParsedLinesForRendering', () => {
         repeatCount: 2,
         groupLines: [
           [
-            { chordSymbol: 'A', chordDisplayLabel: 'A', repeatCountLabel: null, strumAccentGlyphs: null, lyricText: ' ' },
-            { chordSymbol: 'G', chordDisplayLabel: 'G', repeatCountLabel: null, strumAccentGlyphs: null, lyricText: '' },
+            {
+              chordSymbol: 'A',
+              chordDisplayLabel: 'A',
+              repeatCountLabel: null,
+              strumAccentGlyphs: null,
+              lyricText: ' ',
+            },
+            {
+              chordSymbol: 'G',
+              chordDisplayLabel: 'G',
+              repeatCountLabel: null,
+              strumAccentGlyphs: null,
+              lyricText: '',
+            },
           ],
         ],
       },
@@ -298,7 +334,9 @@ describe('computeLineTimeWeights', () => {
     const weights = computeLineTimeWeights(renderableLines);
     // tabBlock (2 raw tab lines) + repeatedChordGroup (1 group line * x2)
     expect(weights).toEqual([2, 2]);
-    expect(weights.reduce((sum, weight) => sum + weight, 0)).toBe(countLinesForBpmTiming(renderableLines));
+    expect(weights.reduce((sum, weight) => sum + weight, 0)).toBe(
+      countLinesForBpmTiming(renderableLines),
+    );
   });
 });
 
@@ -309,8 +347,20 @@ describe('splitLyricLineIntoRenderableTokens', () => {
     const tokens = splitLyricLineIntoRenderableTokens(lyricLine);
 
     expect(tokens).toEqual([
-      { chordSymbol: null, chordDisplayLabel: null, repeatCountLabel: null, strumAccentGlyphs: null, lyricText: 'word ' },
-      { chordSymbol: 'C', chordDisplayLabel: 'C', repeatCountLabel: null, strumAccentGlyphs: null, lyricText: 'word two' },
+      {
+        chordSymbol: null,
+        chordDisplayLabel: null,
+        repeatCountLabel: null,
+        strumAccentGlyphs: null,
+        lyricText: 'word ',
+      },
+      {
+        chordSymbol: 'C',
+        chordDisplayLabel: 'C',
+        repeatCountLabel: null,
+        strumAccentGlyphs: null,
+        lyricText: 'word two',
+      },
     ]);
   });
 
@@ -323,7 +373,13 @@ describe('splitLyricLineIntoRenderableTokens', () => {
     const blankLyricLine = parsedSong.lines[0] as LyricParsedLine;
     expect(blankLyricLine).toEqual({ type: 'lyric', text: '', chords: [] });
     expect(splitLyricLineIntoRenderableTokens(blankLyricLine)).toEqual([
-      { chordSymbol: null, chordDisplayLabel: null, repeatCountLabel: null, strumAccentGlyphs: null, lyricText: ' ' },
+      {
+        chordSymbol: null,
+        chordDisplayLabel: null,
+        repeatCountLabel: null,
+        strumAccentGlyphs: null,
+        lyricText: ' ',
+      },
     ]);
   });
 
@@ -331,7 +387,13 @@ describe('splitLyricLineIntoRenderableTokens', () => {
     const parsedSong = parseChordProSongText('[G][G]');
     const lyricLine = parsedSong.lines[0] as LyricParsedLine;
     expect(splitLyricLineIntoRenderableTokens(lyricLine)).toEqual([
-      { chordSymbol: 'G', chordDisplayLabel: 'G', repeatCountLabel: 'x2', strumAccentGlyphs: null, lyricText: '' },
+      {
+        chordSymbol: 'G',
+        chordDisplayLabel: 'G',
+        repeatCountLabel: 'x2',
+        strumAccentGlyphs: null,
+        lyricText: '',
+      },
     ]);
   });
 
@@ -339,7 +401,13 @@ describe('splitLyricLineIntoRenderableTokens', () => {
     const parsedSong = parseChordProSongText('[G][G][G][G]');
     const lyricLine = parsedSong.lines[0] as LyricParsedLine;
     expect(splitLyricLineIntoRenderableTokens(lyricLine)).toEqual([
-      { chordSymbol: 'G', chordDisplayLabel: 'G', repeatCountLabel: 'x4', strumAccentGlyphs: null, lyricText: '' },
+      {
+        chordSymbol: 'G',
+        chordDisplayLabel: 'G',
+        repeatCountLabel: 'x4',
+        strumAccentGlyphs: null,
+        lyricText: '',
+      },
     ]);
   });
 
@@ -347,7 +415,13 @@ describe('splitLyricLineIntoRenderableTokens', () => {
     const parsedSong = parseChordProSongText('[G] [G]');
     const lyricLine = parsedSong.lines[0] as LyricParsedLine;
     expect(splitLyricLineIntoRenderableTokens(lyricLine)).toEqual([
-      { chordSymbol: 'G', chordDisplayLabel: 'G', repeatCountLabel: 'x2', strumAccentGlyphs: null, lyricText: '' },
+      {
+        chordSymbol: 'G',
+        chordDisplayLabel: 'G',
+        repeatCountLabel: 'x2',
+        strumAccentGlyphs: null,
+        lyricText: '',
+      },
     ]);
   });
 
@@ -355,8 +429,20 @@ describe('splitLyricLineIntoRenderableTokens', () => {
     const parsedSong = parseChordProSongText('[G]word one [G]word two');
     const lyricLine = parsedSong.lines[0] as LyricParsedLine;
     expect(splitLyricLineIntoRenderableTokens(lyricLine)).toEqual([
-      { chordSymbol: 'G', chordDisplayLabel: 'G', repeatCountLabel: null, strumAccentGlyphs: null, lyricText: 'word one ' },
-      { chordSymbol: 'G', chordDisplayLabel: 'G', repeatCountLabel: null, strumAccentGlyphs: null, lyricText: 'word two' },
+      {
+        chordSymbol: 'G',
+        chordDisplayLabel: 'G',
+        repeatCountLabel: null,
+        strumAccentGlyphs: null,
+        lyricText: 'word one ',
+      },
+      {
+        chordSymbol: 'G',
+        chordDisplayLabel: 'G',
+        repeatCountLabel: null,
+        strumAccentGlyphs: null,
+        lyricText: 'word two',
+      },
     ]);
   });
 
@@ -364,9 +450,27 @@ describe('splitLyricLineIntoRenderableTokens', () => {
     const parsedSong = parseChordProSongText('[A] [Em] [Bm]');
     const lyricLine = parsedSong.lines[0] as LyricParsedLine;
     expect(splitLyricLineIntoRenderableTokens(lyricLine)).toEqual([
-      { chordSymbol: 'A', chordDisplayLabel: 'A', repeatCountLabel: null, strumAccentGlyphs: null, lyricText: ' ' },
-      { chordSymbol: 'Em', chordDisplayLabel: 'Em', repeatCountLabel: null, strumAccentGlyphs: null, lyricText: ' ' },
-      { chordSymbol: 'Bm', chordDisplayLabel: 'Bm', repeatCountLabel: null, strumAccentGlyphs: null, lyricText: '' },
+      {
+        chordSymbol: 'A',
+        chordDisplayLabel: 'A',
+        repeatCountLabel: null,
+        strumAccentGlyphs: null,
+        lyricText: ' ',
+      },
+      {
+        chordSymbol: 'Em',
+        chordDisplayLabel: 'Em',
+        repeatCountLabel: null,
+        strumAccentGlyphs: null,
+        lyricText: ' ',
+      },
+      {
+        chordSymbol: 'Bm',
+        chordDisplayLabel: 'Bm',
+        repeatCountLabel: null,
+        strumAccentGlyphs: null,
+        lyricText: '',
+      },
     ]);
   });
 
@@ -374,8 +478,20 @@ describe('splitLyricLineIntoRenderableTokens', () => {
     const parsedSong = parseChordProSongText('[A] [↓ ↓ ↓ ↓]');
     const lyricLine = parsedSong.lines[0] as LyricParsedLine;
     expect(splitLyricLineIntoRenderableTokens(lyricLine)).toEqual([
-      { chordSymbol: 'A', chordDisplayLabel: 'A', repeatCountLabel: null, strumAccentGlyphs: null, lyricText: ' ' },
-      { chordSymbol: null, chordDisplayLabel: null, repeatCountLabel: null, strumAccentGlyphs: '↓ ↓ ↓ ↓', lyricText: '' },
+      {
+        chordSymbol: 'A',
+        chordDisplayLabel: 'A',
+        repeatCountLabel: null,
+        strumAccentGlyphs: null,
+        lyricText: ' ',
+      },
+      {
+        chordSymbol: null,
+        chordDisplayLabel: null,
+        repeatCountLabel: null,
+        strumAccentGlyphs: '↓ ↓ ↓ ↓',
+        lyricText: '',
+      },
     ]);
   });
 
@@ -383,7 +499,13 @@ describe('splitLyricLineIntoRenderableTokens', () => {
     const parsedSong = parseChordProSongText('[↓↓↓↓]');
     const lyricLine = parsedSong.lines[0] as LyricParsedLine;
     expect(splitLyricLineIntoRenderableTokens(lyricLine)).toEqual([
-      { chordSymbol: null, chordDisplayLabel: null, repeatCountLabel: null, strumAccentGlyphs: '↓ ↓ ↓ ↓', lyricText: '' },
+      {
+        chordSymbol: null,
+        chordDisplayLabel: null,
+        repeatCountLabel: null,
+        strumAccentGlyphs: '↓ ↓ ↓ ↓',
+        lyricText: '',
+      },
     ]);
   });
 
@@ -391,8 +513,20 @@ describe('splitLyricLineIntoRenderableTokens', () => {
     const parsedSong = parseChordProSongText('[↓][↓]');
     const lyricLine = parsedSong.lines[0] as LyricParsedLine;
     expect(splitLyricLineIntoRenderableTokens(lyricLine)).toEqual([
-      { chordSymbol: null, chordDisplayLabel: null, repeatCountLabel: null, strumAccentGlyphs: '↓', lyricText: '' },
-      { chordSymbol: null, chordDisplayLabel: null, repeatCountLabel: null, strumAccentGlyphs: '↓', lyricText: '' },
+      {
+        chordSymbol: null,
+        chordDisplayLabel: null,
+        repeatCountLabel: null,
+        strumAccentGlyphs: '↓',
+        lyricText: '',
+      },
+      {
+        chordSymbol: null,
+        chordDisplayLabel: null,
+        repeatCountLabel: null,
+        strumAccentGlyphs: '↓',
+        lyricText: '',
+      },
     ]);
   });
 });
@@ -429,7 +563,11 @@ describe('buildTokenRowSegments', () => {
     const segments = buildTokenRowSegments(tokens);
 
     expect(segments).toHaveLength(3);
-    expect(segments[0]).toEqual({ type: 'token', token: tokens[0], attachedStrumAccentGlyphs: null });
+    expect(segments[0]).toEqual({
+      type: 'token',
+      token: tokens[0],
+      attachedStrumAccentGlyphs: null,
+    });
 
     const secondSegment = segments[1];
     expect(secondSegment.type).toBe('token');
@@ -501,7 +639,10 @@ describe('distributeLyricWordsAcrossChordTokens', () => {
 
   it('splits a longer lyric across chords in reading order', () => {
     const chordTokens = [makeChordToken('Em'), makeChordToken('Bm')];
-    const result = distributeLyricWordsAcrossChordTokens('Y yo estoy aquí borracho y loco', chordTokens);
+    const result = distributeLyricWordsAcrossChordTokens(
+      'Y yo estoy aquí borracho y loco',
+      chordTokens,
+    );
 
     expect(result.map((token) => token.lyricText)).toEqual(['Y yo estoy aquí', 'borracho y loco']);
   });
@@ -526,7 +667,12 @@ describe('distributeLyricWordsAcrossChordTokens', () => {
     // neighbor's "río como" (8 chars) — two chunks meant to look evenly spaced.
     // Targeting character length instead keeps them close: "asustes si" (10 chars)
     // and "me río como" (11 chars).
-    const chordTokens = [makeChordToken('Bm'), makeChordToken('G'), makeChordToken('D'), makeChordToken('A')];
+    const chordTokens = [
+      makeChordToken('Bm'),
+      makeChordToken('G'),
+      makeChordToken('D'),
+      makeChordToken('A'),
+    ];
     const result = distributeLyricWordsAcrossChordTokens(
       'Y no te asustes si me río como un loco',
       chordTokens,

@@ -33,7 +33,12 @@ export function SongOptionsMenu({
   const { colorPalette, cornerRadius, elevationShadow } = useAppTheme();
 
   return (
-    <Modal visible={anchor !== null} transparent animationType="fade" onRequestClose={onRequestClose}>
+    <Modal
+      visible={anchor !== null}
+      transparent
+      animationType="fade"
+      onRequestClose={onRequestClose}
+    >
       <Pressable style={StyleSheet.absoluteFillObject} onPress={onRequestClose} />
       {anchor ? (
         <View

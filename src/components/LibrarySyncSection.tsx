@@ -32,9 +32,9 @@ export function LibrarySyncSection() {
     return (
       <View style={styles.container}>
         <Text style={[styles.helpText, { color: colorPalette.textMuted }]}>
-          Keep the same songs on every device. Your library is saved to a secret gist on your
-          GitHub account. Create a fine-grained token with no repository access and only the
-          account permission “Gists: Read and write”, then paste it here on each device.
+          Keep the same songs on every device. Your library is saved to a secret gist on your GitHub
+          account. Create a fine-grained token with no repository access and only the account
+          permission “Gists: Read and write”, then paste it here on each device.
         </Text>
         <Pressable onPress={() => void Linking.openURL(CREATE_TOKEN_URL)} style={buttonStyle}>
           <Text style={{ color: colorPalette.accent }}>Create a token on GitHub</Text>
@@ -49,7 +49,11 @@ export function LibrarySyncSection() {
           secureTextEntry
           style={[
             styles.tokenInput,
-            { backgroundColor: colorPalette.surface, color: colorPalette.text, borderColor: colorPalette.divider },
+            {
+              backgroundColor: colorPalette.surface,
+              color: colorPalette.text,
+              borderColor: colorPalette.divider,
+            },
           ]}
         />
         <Pressable
@@ -68,7 +72,8 @@ export function LibrarySyncSection() {
 
   let statusText = 'Not synced yet';
   if (isSyncing) statusText = 'Syncing…';
-  else if (syncStatus === 'error') statusText = `Sync failed: ${syncErrorMessage ?? 'unknown error'}`;
+  else if (syncStatus === 'error')
+    statusText = `Sync failed: ${syncErrorMessage ?? 'unknown error'}`;
   else if (lastSyncedAt) statusText = `Synced ${formatLastSyncedAt(lastSyncedAt)}`;
 
   return (

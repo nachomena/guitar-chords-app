@@ -49,8 +49,7 @@ function applyColumnDefaults(songRow: SongRow): SongRow {
 export const songStorage: SongStorage = {
   selectAllSongRows: async () => readAllSongRows(),
 
-  selectSongRowById: async (songId) =>
-    readAllSongRows().find((songRow) => songRow.id === songId),
+  selectSongRowById: async (songId) => readAllSongRows().find((songRow) => songRow.id === songId),
 
   insertSongRows: async (songRowsToInsert) => {
     const existingSongRows = readAllSongRows();

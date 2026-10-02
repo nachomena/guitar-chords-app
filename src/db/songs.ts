@@ -74,10 +74,7 @@ export async function createSong(songInputFields: SongInputFields): Promise<Song
   return newRow;
 }
 
-export async function updateSong(
-  songId: string,
-  songInputFields: SongInputFields,
-): Promise<void> {
+export async function updateSong(songId: string, songInputFields: SongInputFields): Promise<void> {
   await songStorage.updateSongRowFields(songId, {
     ...songInputFieldsToRow(songInputFields),
     updatedAt: currentTimestampAsIsoString(),
@@ -106,10 +103,7 @@ export async function duplicateSong(songToDuplicate: SongRow): Promise<SongRow> 
   return duplicatedRow;
 }
 
-export async function setSongFavorite(
-  songId: string,
-  isFavorite: boolean,
-): Promise<void> {
+export async function setSongFavorite(songId: string, isFavorite: boolean): Promise<void> {
   await songStorage.updateSongRowFields(songId, {
     isFavorite,
     updatedAt: currentTimestampAsIsoString(),
@@ -118,9 +112,7 @@ export async function setSongFavorite(
 }
 
 /** Replaces the entire library — used by JSON import's "Replace" mode (§8.6). */
-export async function replaceAllSongsWithImportedRows(
-  importedRows: SongRow[],
-): Promise<void> {
+export async function replaceAllSongsWithImportedRows(importedRows: SongRow[]): Promise<void> {
   const importedSongIds = new Set(importedRows.map((importedRow) => importedRow.id));
   const replacedSongs = await songStorage.selectAllSongRows();
   await songStorage.deleteAllSongRows();
@@ -138,9 +130,7 @@ export async function replaceAllSongsWithImportedRows(
 export async function mergeImportedSongRows(importedRows: SongRow[]): Promise<number> {
   const existingSongs = await getAllSongs();
   const existingSongIds = new Set(existingSongs.map((existingSong) => existingSong.id));
-  const rowsToInsert = importedRows.filter(
-    (importedRow) => !existingSongIds.has(importedRow.id),
-  );
+  const rowsToInsert = importedRows.filter((importedRow) => !existingSongIds.has(importedRow.id));
   await songStorage.insertSongRows(rowsToInsert);
   requestLibrarySync();
   return rowsToInsert.length;
@@ -162,11 +152,7 @@ export function useSongQuery(songId: string | undefined): UseQueryResult<SongRow
   });
 }
 
-export function useCreateSongMutation(): UseMutationResult<
-  SongRow,
-  Error,
-  SongInputFields
-> {
+export function useCreateSongMutation(): UseMutationResult<SongRow, Error, SongInputFields> {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createSong,

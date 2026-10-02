@@ -40,8 +40,10 @@ async function requestGitHubApi<TResponse>(
 }
 
 function describeFailedResponse(httpStatus: number): string {
-  if (httpStatus === 401) return 'GitHub rejected the token. It may be mistyped, expired or revoked.';
-  if (httpStatus === 403) return 'The token can’t access gists. Give it the “Gists: read and write” permission.';
+  if (httpStatus === 401)
+    return 'GitHub rejected the token. It may be mistyped, expired or revoked.';
+  if (httpStatus === 403)
+    return 'The token can’t access gists. Give it the “Gists: read and write” permission.';
   if (httpStatus === 404) return 'The sync gist wasn’t found.';
   return `GitHub returned an error (HTTP ${httpStatus}). Try again later.`;
 }

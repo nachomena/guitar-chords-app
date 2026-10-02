@@ -1,14 +1,7 @@
 // The Song Editor (Add/Edit) screen (SPEC.md §5.1 item 3).
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Polyline } from 'react-native-svg';
@@ -66,11 +59,14 @@ function buildChordSheetTextFromDraft(draft: SongEditorDraft): string {
   const capoNumber = Number(draft.capo) || 0;
   if (capoNumber > 0) metadataLines.push(`{capo: ${capoNumber}}`);
 
-  const durationTotalSeconds = (Number(draft.durationMinutes) || 0) * 60 + (Number(draft.durationSeconds) || 0);
+  const durationTotalSeconds =
+    (Number(draft.durationMinutes) || 0) * 60 + (Number(draft.durationSeconds) || 0);
   if (durationTotalSeconds > 0) {
     const durationMinutesPart = Math.floor(durationTotalSeconds / 60);
     const durationSecondsPart = durationTotalSeconds % 60;
-    metadataLines.push(`{duration: ${durationMinutesPart}:${String(durationSecondsPart).padStart(2, '0')}}`);
+    metadataLines.push(
+      `{duration: ${durationMinutesPart}:${String(durationSecondsPart).padStart(2, '0')}}`,
+    );
   }
 
   return `${metadataLines.join('\n')}\n\n${draft.chordSheetBodyText}`;
@@ -78,7 +74,16 @@ function buildChordSheetTextFromDraft(draft: SongEditorDraft): string {
 
 function BackChevronIcon({ color }: { color: string }) {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round">
+    <Svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <Polyline points="15 18 9 12 15 6" />
     </Svg>
   );
@@ -104,7 +109,8 @@ function useTapTempo(onBpmEstimated: (bpm: number) => void) {
       .slice(1)
       .map((timestamp, index) => timestamp - tapTimestamps[index]);
     const averageIntervalMilliseconds =
-      intervalsMilliseconds.reduce((sum, interval) => sum + interval, 0) / intervalsMilliseconds.length;
+      intervalsMilliseconds.reduce((sum, interval) => sum + interval, 0) /
+      intervalsMilliseconds.length;
     onBpmEstimated(Math.round(60000 / averageIntervalMilliseconds));
   };
 }
@@ -231,12 +237,22 @@ export function SongEditorScreen({
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colorPalette.background, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colorPalette.background, paddingTop: insets.top },
+      ]}
+    >
       <View style={styles.header}>
         <Pressable hitSlop={8} onPress={handleCancel} style={styles.headerIconButton}>
           <BackChevronIcon color={colorPalette.text} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colorPalette.text, fontFamily: fontFamily.headingMedium }]}>
+        <Text
+          style={[
+            styles.headerTitle,
+            { color: colorPalette.text, fontFamily: fontFamily.headingMedium },
+          ]}
+        >
           {isNewSong ? 'New Song' : 'Edit Song'}
         </Text>
         <Pressable
@@ -247,7 +263,9 @@ export function SongEditorScreen({
             { borderColor: colorPalette.accent, opacity: draft.title.trim() ? 1 : 0.45 },
           ]}
         >
-          <Text style={{ color: colorPalette.accent, fontFamily: fontFamily.bodyMedium }}>Save</Text>
+          <Text style={{ color: colorPalette.accent, fontFamily: fontFamily.bodyMedium }}>
+            Save
+          </Text>
         </Pressable>
       </View>
 
@@ -258,7 +276,14 @@ export function SongEditorScreen({
             onChangeText={(text) => setDraftField('title', text)}
             placeholder="Song title"
             placeholderTextColor={colorPalette.textMuted}
-            style={[styles.textInput, { backgroundColor: colorPalette.surface, color: colorPalette.text, borderColor: colorPalette.divider }]}
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: colorPalette.surface,
+                color: colorPalette.text,
+                borderColor: colorPalette.divider,
+              },
+            ]}
           />
         </FormField>
 
@@ -268,7 +293,14 @@ export function SongEditorScreen({
             onChangeText={(text) => setDraftField('artist', text)}
             placeholder="Artist"
             placeholderTextColor={colorPalette.textMuted}
-            style={[styles.textInput, { backgroundColor: colorPalette.surface, color: colorPalette.text, borderColor: colorPalette.divider }]}
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: colorPalette.surface,
+                color: colorPalette.text,
+                borderColor: colorPalette.divider,
+              },
+            ]}
           />
         </FormField>
 
@@ -279,7 +311,14 @@ export function SongEditorScreen({
               onChangeText={(text) => setDraftField('key', text)}
               placeholder="e.g. G"
               placeholderTextColor={colorPalette.textMuted}
-              style={[styles.textInput, { backgroundColor: colorPalette.surface, color: colorPalette.text, borderColor: colorPalette.divider }]}
+              style={[
+                styles.textInput,
+                {
+                  backgroundColor: colorPalette.surface,
+                  color: colorPalette.text,
+                  borderColor: colorPalette.divider,
+                },
+              ]}
             />
           </FormField>
           <FormField label="Capo" colorPalette={colorPalette} style={{ flex: 1 }}>
@@ -287,7 +326,14 @@ export function SongEditorScreen({
               value={draft.capo}
               onChangeText={(text) => setDraftField('capo', text)}
               keyboardType="number-pad"
-              style={[styles.textInput, { backgroundColor: colorPalette.surface, color: colorPalette.text, borderColor: colorPalette.divider }]}
+              style={[
+                styles.textInput,
+                {
+                  backgroundColor: colorPalette.surface,
+                  color: colorPalette.text,
+                  borderColor: colorPalette.divider,
+                },
+              ]}
             />
           </FormField>
         </View>
@@ -298,27 +344,53 @@ export function SongEditorScreen({
               value={draft.durationMinutes}
               onChangeText={(text) => setDraftField('durationMinutes', text)}
               keyboardType="number-pad"
-              style={[styles.durationInput, { backgroundColor: colorPalette.surface, color: colorPalette.text, borderColor: colorPalette.divider }]}
+              style={[
+                styles.durationInput,
+                {
+                  backgroundColor: colorPalette.surface,
+                  color: colorPalette.text,
+                  borderColor: colorPalette.divider,
+                },
+              ]}
             />
             <Text style={{ color: colorPalette.textMuted }}>min</Text>
             <TextInput
               value={draft.durationSeconds}
               onChangeText={(text) => setDraftField('durationSeconds', text)}
               keyboardType="number-pad"
-              style={[styles.durationInput, { backgroundColor: colorPalette.surface, color: colorPalette.text, borderColor: colorPalette.divider }]}
+              style={[
+                styles.durationInput,
+                {
+                  backgroundColor: colorPalette.surface,
+                  color: colorPalette.text,
+                  borderColor: colorPalette.divider,
+                },
+              ]}
             />
             <Text style={{ color: colorPalette.textMuted }}>sec</Text>
           </View>
         </FormField>
 
         <View style={styles.fieldRow}>
-          <FormField label="BPM (fallback if no duration)" colorPalette={colorPalette} style={{ flex: 1 }}>
+          <FormField
+            label="BPM (fallback if no duration)"
+            colorPalette={colorPalette}
+            style={{ flex: 1 }}
+          >
             <View style={styles.bpmRow}>
               <TextInput
                 value={draft.bpm}
                 onChangeText={(text) => setDraftField('bpm', text)}
                 keyboardType="number-pad"
-                style={[styles.textInput, { flex: 1, backgroundColor: colorPalette.surface, color: colorPalette.text, borderColor: colorPalette.divider }]}
+                style={[
+                  styles.textInput,
+                  {
+                    flex: 1,
+                    backgroundColor: colorPalette.surface,
+                    color: colorPalette.text,
+                    borderColor: colorPalette.divider,
+                  },
+                ]}
               />
               <Pressable
                 onPress={handleTapTempo}
@@ -334,14 +406,28 @@ export function SongEditorScreen({
                 value={draft.timeSignatureNumerator}
                 onChangeText={(text) => setDraftField('timeSignatureNumerator', text)}
                 keyboardType="number-pad"
-                style={[styles.timeSignatureInput, { backgroundColor: colorPalette.surface, color: colorPalette.text, borderColor: colorPalette.divider }]}
+                style={[
+                  styles.timeSignatureInput,
+                  {
+                    backgroundColor: colorPalette.surface,
+                    color: colorPalette.text,
+                    borderColor: colorPalette.divider,
+                  },
+                ]}
               />
               <Text style={{ color: colorPalette.textMuted }}>/</Text>
               <TextInput
                 value={draft.timeSignatureDenominator}
                 onChangeText={(text) => setDraftField('timeSignatureDenominator', text)}
                 keyboardType="number-pad"
-                style={[styles.timeSignatureInput, { backgroundColor: colorPalette.surface, color: colorPalette.text, borderColor: colorPalette.divider }]}
+                style={[
+                  styles.timeSignatureInput,
+                  {
+                    backgroundColor: colorPalette.surface,
+                    color: colorPalette.text,
+                    borderColor: colorPalette.divider,
+                  },
+                ]}
               />
             </View>
           </FormField>
@@ -353,7 +439,14 @@ export function SongEditorScreen({
             onChangeText={(text) => setDraftField('tagsText', text)}
             placeholder="acoustic, band X"
             placeholderTextColor={colorPalette.textMuted}
-            style={[styles.textInput, { backgroundColor: colorPalette.surface, color: colorPalette.text, borderColor: colorPalette.divider }]}
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: colorPalette.surface,
+                color: colorPalette.text,
+                borderColor: colorPalette.divider,
+              },
+            ]}
           />
         </FormField>
 
@@ -379,7 +472,10 @@ export function SongEditorScreen({
             <View
               style={[
                 styles.previewBox,
-                { backgroundColor: colorPalette.elevatedSurface, borderRadius: cornerRadius.medium },
+                {
+                  backgroundColor: colorPalette.elevatedSurface,
+                  borderRadius: cornerRadius.medium,
+                },
               ]}
             >
               <ChordSheetView
@@ -407,7 +503,11 @@ export function SongEditorScreen({
               textAlignVertical="top"
               style={[
                 styles.chordSheetTextInput,
-                { backgroundColor: colorPalette.surface, color: colorPalette.text, borderColor: colorPalette.divider },
+                {
+                  backgroundColor: colorPalette.surface,
+                  color: colorPalette.text,
+                  borderColor: colorPalette.divider,
+                },
               ]}
             />
           )}

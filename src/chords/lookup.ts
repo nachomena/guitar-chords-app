@@ -16,8 +16,9 @@ type GuitarChordDatabaseEntry = {
   positions: ChordDiagramPosition[];
 };
 
-const guitarChordsByDatabaseKey = (guitarChordsDatabase as { chords: Record<string, GuitarChordDatabaseEntry[]> })
-  .chords;
+const guitarChordsByDatabaseKey = (
+  guitarChordsDatabase as { chords: Record<string, GuitarChordDatabaseEntry[]> }
+).chords;
 
 /**
  * Maps a chord root as written in a song (sharp or flat, either enharmonic spelling)
@@ -25,35 +26,71 @@ const guitarChordsByDatabaseKey = (guitarChordsDatabase as { chords: Record<stri
  * uses one fixed spelling per pitch class, not necessarily the one the user typed.
  */
 const ROOT_NOTE_NAME_TO_CHORDS_DATABASE_KEY: Record<string, string> = {
-  'C': 'C',
+  C: 'C',
   'B#': 'C',
   'C#': 'Csharp',
-  'Db': 'Csharp',
-  'D': 'D',
+  Db: 'Csharp',
+  D: 'D',
   'D#': 'Eb',
-  'Eb': 'Eb',
-  'E': 'E',
-  'Fb': 'E',
-  'F': 'F',
+  Eb: 'Eb',
+  E: 'E',
+  Fb: 'E',
+  F: 'F',
   'E#': 'F',
   'F#': 'Fsharp',
-  'Gb': 'Fsharp',
-  'G': 'G',
+  Gb: 'Fsharp',
+  G: 'G',
   'G#': 'Ab',
-  'Ab': 'Ab',
-  'A': 'A',
+  Ab: 'Ab',
+  A: 'A',
   'A#': 'Bb',
-  'Bb': 'Bb',
-  'B': 'B',
-  'Cb': 'B',
+  Bb: 'Bb',
+  B: 'B',
+  Cb: 'B',
 };
 
 /** Every suffix `@tombatossals/chords-db` recognizes directly, keyed to itself. */
 const KNOWN_CHORD_DATABASE_SUFFIXES = new Set([
-  'major', 'minor', 'dim', 'dim7', 'sus2', 'sus4', '7sus4', 'alt', 'aug', '6', '69',
-  '7', '7b5', 'aug7', '9', '9b5', 'aug9', '7b9', '7#9', '11', '9#11', '13', 'maj7',
-  'maj7b5', 'maj7#5', 'maj9', 'maj11', 'maj13', 'm6', 'm69', 'm7', 'm7b5', 'm9', 'm11',
-  'mmaj7', 'mmaj7b5', 'mmaj9', 'mmaj11', 'add9', 'madd9',
+  'major',
+  'minor',
+  'dim',
+  'dim7',
+  'sus2',
+  'sus4',
+  '7sus4',
+  'alt',
+  'aug',
+  '6',
+  '69',
+  '7',
+  '7b5',
+  'aug7',
+  '9',
+  '9b5',
+  'aug9',
+  '7b9',
+  '7#9',
+  '11',
+  '9#11',
+  '13',
+  'maj7',
+  'maj7b5',
+  'maj7#5',
+  'maj9',
+  'maj11',
+  'maj13',
+  'm6',
+  'm69',
+  'm7',
+  'm7b5',
+  'm9',
+  'm11',
+  'mmaj7',
+  'mmaj7b5',
+  'mmaj9',
+  'mmaj11',
+  'add9',
+  'madd9',
 ]);
 
 /**
@@ -65,29 +102,29 @@ const KNOWN_CHORD_DATABASE_SUFFIXES = new Set([
  */
 const CHORD_SUFFIX_ALIAS_TABLE: Record<string, string> = {
   '': 'major',
-  'maj': 'major',
-  'M': 'major',
-  'm': 'minor',
-  'min': 'minor',
+  maj: 'major',
+  M: 'major',
+  m: 'minor',
+  min: 'minor',
   '-': 'minor',
   '7M': 'maj7',
-  'M7': 'maj7',
+  M7: 'maj7',
   '9M': 'maj9',
-  'M9': 'maj9',
-  'M11': 'maj11',
-  'M13': 'maj13',
+  M9: 'maj9',
+  M11: 'maj11',
+  M13: 'maj13',
   '+': 'aug',
-  'sus': 'sus4',
-  'ø': 'm7b5',
+  sus: 'sus4',
+  ø: 'm7b5',
   'm7-5': 'm7b5',
   '°': 'dim',
   '°7': 'dim7',
-  'mM7': 'mmaj7',
+  mM7: 'mmaj7',
   'm/maj7': 'mmaj7',
-  'min7': 'm7',
-  'min9': 'm9',
-  'min11': 'm11',
-  'min6': 'm6',
+  min7: 'm7',
+  min9: 'm9',
+  min11: 'm11',
+  min6: 'm6',
 };
 
 function normalizeChordSuffix(rawSuffix: string): string | null {
