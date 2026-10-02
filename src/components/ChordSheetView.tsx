@@ -466,6 +466,10 @@ const styles = StyleSheet.create({
   },
   repeatedGroupContainer: {
     position: 'relative',
+    // Hug the chords instead of stretching across the sheet, so the "× N" badge
+    // sits next to them even on wide (desktop) screens.
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
     borderWidth: 1,
     borderStyle: 'dashed',
     borderRadius: 8,
